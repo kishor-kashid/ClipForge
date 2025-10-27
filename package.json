@@ -4,7 +4,7 @@
   "description": "A desktop video editor for trimming and exporting videos",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev": "concurrently -k -s first \"npm run dev:vite\" \"wait-on http://localhost:5173 && electron .\"",
     "dev:vite": "vite",
     "electron:dev": "electron .",
     "build": "vite build",
@@ -32,6 +32,7 @@
     "vite": "^6.4.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.16",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "autoprefixer": "^10.4.21",
