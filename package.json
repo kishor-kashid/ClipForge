@@ -1,0 +1,47 @@
+{
+  "name": "clipforge",
+  "version": "1.0.0",
+  "description": "A desktop video editor for trimming and exporting videos",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev:vite": "vite",
+    "electron:dev": "electron .",
+    "build": "vite build",
+    "electron:build": "electron-builder",
+    "test": "vitest",
+    "test:unit": "vitest tests/unit",
+    "test:integration": "vitest tests/integration",
+    "test:watch": "vitest --watch"
+  },
+  "keywords": [
+    "electron",
+    "video",
+    "editor",
+    "ffmpeg"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^38.4.0",
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "vite": "^6.4.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
+    "electron-builder": "^26.0.12",
+    "happy-dom": "^20.0.8",
+    "jsdom": "^27.0.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.16",
+    "vitest": "^4.0.4",
+    "wait-on": "^9.0.1"
+  }
+}
