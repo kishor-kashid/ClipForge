@@ -75,6 +75,44 @@ export default function VideoImport() {
     e.target.value = '';
   }, [addVideo]);
 
+  const handleSelectFiles = useCallback(async () => {
+    // Check if running in Electron
+    if (window.electronAPI && window.electronAPI.selectVideoFiles) {
+      try {
+        const result = await window.electronAPI.selectVideoFiles();
+        
+        if (result.canceled) {
+          return;
+        }
+
+        setError(null);
+
+        // Process selected file paths
+        result.filePaths.forEach((filePath) => {
+          const fileName = filePath.split(/[\\/]/).pop(); // Get filename from path
+          
+          if (!isValidVideoFile(fileName)) {
+            setError(`Invalid file format: ${fileName}. Supported formats: MP4, MOV, WebM`);
+            return;
+          }
+
+          const video = {
+            path: filePath,
+            name: fileName,
+            duration: 0,
+          };
+
+          addVideo(video);
+        });
+      } catch (err) {
+        setError(`Failed to select files: ${err.message}`);
+      }
+    } else {
+      // Fallback to HTML file input in browser mode
+      document.getElementById('file-input-fallback')?.click();
+    }
+  }, [addVideo]);
+
   const dropZoneClasses = `
     flex flex-col items-center justify-center
     min-h-[300px] border-2 border-dashed rounded-lg
@@ -120,16 +158,21 @@ export default function VideoImport() {
             <p className="text-sm text-gray-500 mb-4">
               Supported formats: MP4, MOV, WebM
             </p>
-            <label className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
+            <button
+              onClick={handleSelectFiles}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors"
+            >
               Select Files
-              <input
-                type="file"
-                multiple
-                accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
-                onChange={handleFileInput}
-                className="hidden"
-              />
-            </label>
+            </button>
+            {/* Hidden file input as fallback for browser mode */}
+            <input
+              id="file-input-fallback"
+              type="file"
+              multiple
+              accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+              onChange={handleFileInput}
+              className="hidden"
+            />
           </>
         )}
       </div>

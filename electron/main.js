@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 
 // Better dev detection - check if app is packaged
@@ -42,5 +42,23 @@ app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
   }
+});
+
+// IPC Handlers
+
+/**
+ * Handle file dialog for selecting video files
+ */
+ipcMain.handle('dialog:openFile', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections'],
+    filters: [
+      { name: 'Videos', extensions: ['mp4', 'mov', 'webm'] },
+      { name: 'All Files', extensions: ['*'] }
+    ],
+    title: 'Select Video Files'
+  });
+
+  return result;
 });
 
