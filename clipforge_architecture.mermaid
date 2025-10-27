@@ -1,0 +1,136 @@
+graph TB
+    subgraph "User Interaction Layer"
+        UI[User Interface - React App]
+        Import[VideoImport Component]
+        Player[VideoPlayer Component]
+        Timeline[Timeline Component]
+        Trim[TrimControls Component]
+        Export[ExportButton Component]
+    end
+
+    subgraph "State Management Layer"
+        Store[VideoStore - React Context]
+        Store --> |video metadata| Import
+        Store --> |selected video| Player
+        Store --> |video list| Timeline
+        Store --> |trim points| Trim
+        Store --> |export data| Export
+    end
+
+    subgraph "Utility Layer"
+        FileUtils[fileUtils.js<br/>File Validation]
+        TimeUtils[timeUtils.js<br/>Time Formatting]
+        
+        Import --> FileUtils
+        Timeline --> TimeUtils
+        Trim --> TimeUtils
+    end
+
+    subgraph "Electron Main Process"
+        Main[main.js<br/>App Lifecycle & Window Management]
+        Preload[preload.js<br/>Context Bridge API]
+        FFmpegUtil[ffmpeg.js<br/>Video Processing]
+        
+        Main --> |creates| Preload
+        Main --> |uses| FFmpegUtil
+    end
+
+    subgraph "IPC Communication"
+        IPC{IPC Bridge}
+        
+        UI --> |renderer| IPC
+        IPC --> |main| Main
+        Preload --> |expose APIs| IPC
+    end
+
+    subgraph "External Dependencies"
+        FFmpegStatic[FFmpeg Static Binary<br/>Video Encoding/Decoding]
+        FluentFFmpeg[fluent-ffmpeg<br/>FFmpeg Node.js Wrapper]
+        NodeFS[Node.js fs Module<br/>File System Access]
+        ElectronDialog[Electron Dialog<br/>File Picker & Save Dialog]
+        
+        FFmpegUtil --> FluentFFmpeg
+        FluentFFmpeg --> FFmpegStatic
+        Main --> NodeFS
+        Main --> ElectronDialog
+    end
+
+    subgraph "File System"
+        LocalFiles[(Local Video Files<br/>MP4, MOV, WebM)]
+        ExportedFiles[(Exported Videos<br/>MP4)]
+        
+        NodeFS --> |read| LocalFiles
+        FFmpegStatic --> |write| ExportedFiles
+        FFmpegStatic --> |read| LocalFiles
+    end
+
+    subgraph "Testing Layer"
+        UnitTests[Unit Tests<br/>Vitest]
+        IntegrationTests[Integration Tests<br/>Testing Library]
+        TestFixtures[(Test Fixtures<br/>sample-video.mp4)]
+        
+        UnitTests --> |test| FileUtils
+        UnitTests --> |test| TimeUtils
+        UnitTests --> |test| Store
+        IntegrationTests --> |test| Import
+        IntegrationTests --> |test| Trim
+        IntegrationTests --> |test| Export
+        IntegrationTests --> |uses| TestFixtures
+    end
+
+    subgraph "Build & Package"
+        Vite[Vite<br/>Frontend Build Tool]
+        ElectronBuilder[electron-builder<br/>App Packaging]
+        
+        UI --> |compiled by| Vite
+        Vite --> |output to| ElectronBuilder
+        Main --> |bundled by| ElectronBuilder
+        ElectronBuilder --> |produces| WindowsApp[Windows Executable<br/>.exe Installer]
+    end
+
+    %% User Interactions
+    User((User)) --> |drag & drop files| Import
+    User --> |click import button| Import
+    User --> |play/pause| Player
+    User --> |select clip| Timeline
+    User --> |set in/out points| Trim
+    User --> |click export| Export
+
+    %% Import Flow
+    Import --> |file selected| IPC
+    IPC --> |validate file| Main
+    Main --> |return file info| IPC
+    IPC --> |update store| Store
+
+    %% Player Flow
+    Player --> |request video source| IPC
+    IPC --> |get file path| Main
+    Main --> |return path| IPC
+    IPC --> |load video| Player
+
+    %% Export Flow
+    Export --> |export request| IPC
+    IPC --> |open save dialog| ElectronDialog
+    ElectronDialog --> |user selects path| IPC
+    IPC --> |trigger FFmpeg| FFmpegUtil
+    FFmpegUtil --> |process video| FFmpegStatic
+    FFmpegStatic --> |save file| ExportedFiles
+    FFmpegUtil --> |progress updates| IPC
+    IPC --> |update UI| Export
+
+    %% Styling
+    classDef reactComponent fill:#61dafb,stroke:#333,stroke-width:2px,color:#000
+    classDef electronProcess fill:#47848f,stroke:#333,stroke-width:2px,color:#fff
+    classDef utility fill:#ffd700,stroke:#333,stroke-width:2px,color:#000
+    classDef external fill:#ff6b6b,stroke:#333,stroke-width:2px,color:#fff
+    classDef storage fill:#4ecdc4,stroke:#333,stroke-width:2px,color:#000
+    classDef testing fill:#95e1d3,stroke:#333,stroke-width:2px,color:#000
+    classDef build fill:#f38181,stroke:#333,stroke-width:2px,color:#fff
+
+    class Import,Player,Timeline,Trim,Export,UI reactComponent
+    class Main,Preload,FFmpegUtil,IPC electronProcess
+    class FileUtils,TimeUtils,Store utility
+    class FFmpegStatic,FluentFFmpeg,NodeFS,ElectronDialog external
+    class LocalFiles,ExportedFiles,TestFixtures storage
+    class UnitTests,IntegrationTests testing
+    class Vite,ElectronBuilder,WindowsApp build
