@@ -10,6 +10,7 @@ export function VideoProvider({ children }) {
   const [videos, setVideos] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const selectedVideoRef = React.useRef(null);
+  const [trimPoints, setTrimPoints] = useState({});
   
   // Keep ref in sync with state
   React.useEffect(() => {
@@ -98,6 +99,39 @@ export function VideoProvider({ children }) {
     return videos.find((v) => v.path === selectedVideo) || null;
   };
 
+  /**
+   * Set in-point (start time) for a video
+   * @param {string} videoPath - Path of the video
+   * @param {number} inPoint - Start time in seconds
+   */
+  const setInPoint = (videoPath, inPoint) => {
+    setTrimPoints((prev) => ({
+      ...prev,
+      [videoPath]: { ...prev[videoPath], inPoint },
+    }));
+  };
+
+  /**
+   * Set out-point (end time) for a video
+   * @param {string} videoPath - Path of the video
+   * @param {number} outPoint - End time in seconds
+   */
+  const setOutPoint = (videoPath, outPoint) => {
+    setTrimPoints((prev) => ({
+      ...prev,
+      [videoPath]: { ...prev[videoPath], outPoint },
+    }));
+  };
+
+  /**
+   * Get trim points for a video
+   * @param {string} videoPath - Path of the video
+   * @returns {Object} - Object with inPoint and outPoint
+   */
+  const getTrimPoints = (videoPath) => {
+    return trimPoints[videoPath] || { inPoint: 0, outPoint: null };
+  };
+
   const value = {
     videos,
     selectedVideo,
@@ -106,6 +140,10 @@ export function VideoProvider({ children }) {
     updateVideo,
     selectVideo,
     getSelectedVideoObject,
+    trimPoints,
+    setInPoint,
+    setOutPoint,
+    getTrimPoints,
   };
 
   return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;

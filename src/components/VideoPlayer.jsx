@@ -86,6 +86,14 @@ export default function VideoPlayer() {
     }
   };
 
+  const handleSeek = (e) => {
+    const newTime = parseFloat(e.target.value);
+    setCurrentTime(newTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    }
+  };
+
   // No video selected - show placeholder
   if (!selectedVideoObject) {
     return (
@@ -166,6 +174,23 @@ export default function VideoPlayer() {
               </>
             )}
           </button>
+        </div>
+
+        {/* Seek Bar */}
+        <div className="mb-3">
+          <input
+            type="range"
+            min="0"
+            max={duration || 100}
+            value={currentTime}
+            step="0.1"
+            onChange={handleSeek}
+            disabled={!!error || !duration}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 slider"
+            style={{
+              background: `linear-gradient(to right, #2563eb 0%, #2563eb ${(currentTime / (duration || 1)) * 100}%, #e5e7eb ${(currentTime / (duration || 1)) * 100}%, #e5e7eb 100%)`
+            }}
+          />
         </div>
 
         {/* Time Display */}
