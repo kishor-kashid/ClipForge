@@ -3,7 +3,7 @@ import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
 
 export default function VideoPlayer() {
-  const { selectedVideo, videos } = useVideoStore();
+  const { selectedVideo, videos, updateVideo } = useVideoStore();
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -67,9 +67,9 @@ export default function VideoPlayer() {
       const videoDuration = videoRef.current.duration;
       setDuration(videoDuration || 0);
       
-      // Update duration in store if available
-      if (selectedVideoObject && !selectedVideoObject.duration) {
-        // Store duration for future use
+      // Update duration in store
+      if (selectedVideoObject && selectedVideoObject.path && (!selectedVideoObject.duration || selectedVideoObject.duration === 0)) {
+        updateVideo(selectedVideoObject.path, { duration: videoDuration || 0 });
       }
     }
   };

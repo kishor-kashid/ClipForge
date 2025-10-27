@@ -2,6 +2,7 @@ import React from 'react';
 import { VideoProvider } from './store/videoStore';
 import VideoImport from './components/VideoImport';
 import VideoPlayer from './components/VideoPlayer';
+import Timeline from './components/Timeline';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <main className="space-y-8">
             <VideoImport />
             <VideoPlayer />
+            <Timeline />
           </main>
         </div>
       </div>
