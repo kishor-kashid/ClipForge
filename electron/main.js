@@ -1,7 +1,8 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
-const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
+// Better dev detection - check if app is packaged
+const isDev = !app.isPackaged;
 
 let mainWindow;
 

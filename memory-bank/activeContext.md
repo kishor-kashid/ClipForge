@@ -2,16 +2,17 @@
 
 ## Current Status
 **Phase**: Core Feature Development
-**Date**: Post PR #1
-**Focus**: PR #2 - Video Import via Drag & Drop
+**Date**: Post PR #2
+**Focus**: PR #3 - Video Import via File Picker
 
 ## Recent Changes
 - ✅ PR #1 Complete: Project setup with Electron + React + Vite
-- ✅ All dependencies installed and configured
-- ✅ Electron main process and preload script created
-- ✅ Basic React app with Tailwind CSS running
-- ✅ Test suite working (happy-dom environment)
-- 🔄 Ready to begin PR #2: Video Import - Drag & Drop
+- ✅ PR #2 Complete: Video Import via Drag & Drop
+- ✅ Fixed Tailwind CSS v4 setup with @tailwindcss/postcss
+- ✅ Fixed Electron dev mode detection (now loads localhost:5173)
+- ✅ All 37 tests passing (fileUtils, videoStore, VideoImport)
+- ✅ Drag & drop working in both browser and Electron
+- 🔄 Ready to begin PR #3: File Picker Import
 
 ## Current Work Focus
 
@@ -19,16 +20,15 @@
 1. **PR #2: Video Import - Drag & Drop**
    - Create VideoImport component with drag & drop UI
    - Implement file validation utilities
-   - Set up IPC for file handling
-   - Create video state management (React Context)
-   - Write unit tests for file utilities
-   - Write integration tests for import flow
+   - Add Electron file dialog handler to main process
+   - Expose file picker API via context bridge
+   - Update VideoImport component to support file picker
+   - Test file picker in Electron window
 
 ### Priority Tasks
-- Implement drag & drop file handling
-- Create file validation logic
-- Set up video store with React Context
-- Test import workflow end-to-end
+- Set up IPC for file dialog
+- Wire up file picker button to Electron dialog
+- Test file selection flow
 
 ## Active Decisions & Considerations
 
@@ -78,17 +78,22 @@
 - Focus on core user flow: import → preview → trim → export
 
 ## Next Milestone
-**Milestone**: Complete PR #2 - Video Import (Drag & Drop)
+**Milestone**: Complete PR #3 - Video Import (File Picker)
 **Success Criteria**:
-- VideoImport component created
-- Drag & drop accepts MP4, MOV, WebM files
-- Invalid files show error messages
-- File utilities unit tests pass
-- Video store tests pass
-- Integration test for drag & drop passes
+- File picker dialog opens when clicking "Select Files"
+- Electron dialog API working via IPC
+- File picker accepts multiple video files
+- Selected files added to video store
+- Works in packaged app (not just dev mode)
 
 ## Active Questions
-- None currently - proceeding with PR #1 implementation
+- None currently - proceeding with PR #3 implementation
+
+## Configuration Issues Resolved
+- ✅ Fixed index.html location (moved from public/ to root)
+- ✅ Fixed PostCSS config (CommonJS syntax, Tailwind v4)
+- ✅ Fixed Electron dev detection (using app.isPackaged)
+- ✅ Fixed Tailwind CSS v4 setup (@tailwindcss/postcss plugin)
 
 ## Communication Notes
 - User has reviewed PRD and architecture

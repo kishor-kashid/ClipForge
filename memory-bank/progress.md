@@ -15,15 +15,28 @@
 - ⏰ Deadline established: Tuesday, Oct 28, 10:59 PM CT
 - ✅ Project setup complete (PR #1)
 
-### PR #1: Project Setup ✅
+### PR #1: Project Setup ✅ COMPLETE
 - ✅ Node.js project initialized
 - ✅ All dependencies installed (Electron, React, Vite, FFmpeg, Testing tools)
-- ✅ Vite and Vitest configured
-- ✅ Electron main process created
+- ✅ Vite and Vitest configured (fixed PostCSS for Tailwind v4)
+- ✅ Electron main process created (fixed dev mode detection)
 - ✅ Preload script with context bridge
-- ✅ Basic React app with Tailwind CSS
+- ✅ Basic React app with Tailwind CSS v4
 - ✅ Development scripts configured
 - ✅ Test suite working (happy-dom environment)
+- ✅ **Electron window loads dev server successfully**
+- ✅ **App runs in both browser and Electron**
+
+### PR #2: Video Import - Drag & Drop ✅ COMPLETE
+- ✅ VideoImport component created with drag & drop UI
+- ✅ File validation utilities (`fileUtils.js`)
+- ✅ Video store with React Context (`videoStore.jsx`)
+- ✅ Unit tests for file utilities (16 tests passing)
+- ✅ Unit tests for video store (12 tests passing)
+- ✅ Integration tests for drag & drop (9 tests passing)
+- ✅ Error handling for invalid files
+- ✅ Visual feedback on drag over
+- ✅ File input as fallback option
 
 ## What's Left to Build
 
@@ -37,13 +50,13 @@
 - [x] Configure dev scripts
 - [x] Test app launches
 
-### Phase 2: Import Features (PR #2-3)
-- [ ] Drag & drop file import
-- [ ] File picker dialog
-- [ ] File validation utilities
-- [ ] Video store implementation
-- [ ] Unit tests for file utilities
-- [ ] Integration tests for import flow
+### Phase 2: Import Features (PR #2-3) - PARTIAL ✅
+- [x] Drag & drop file import ✅
+- [ ] File picker dialog (PR #3)
+- [x] File validation utilities ✅
+- [x] Video store implementation ✅
+- [x] Unit tests for file utilities ✅
+- [x] Integration tests for import flow ✅
 
 ### Phase 3: Preview (PR #4)
 - [ ] Video player component
