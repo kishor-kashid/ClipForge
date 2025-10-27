@@ -3,6 +3,7 @@ import { VideoProvider } from './store/videoStore';
 import VideoImport from './components/VideoImport';
 import VideoPlayer from './components/VideoPlayer';
 import TrimControls from './components/TrimControls';
+import ExportButton from './components/ExportButton';
 import Timeline from './components/Timeline';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
             <VideoImport />
             <VideoPlayer />
             <TrimControls />
+            <ExportButton />
             <Timeline />
           </main>
         </div>

@@ -8,5 +8,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // File dialog for importing videos
   selectVideoFiles: () => ipcRenderer.invoke('dialog:openFile'),
+  
+  // Save dialog for exporting videos
+  saveVideoFile: () => ipcRenderer.invoke('dialog:saveFile'),
+  
+  // Export video with FFmpeg
+  exportVideo: (params) => ipcRenderer.invoke('export:video', params),
+  
+  // Listen for export progress updates
+  onExportProgress: (callback) => {
+    ipcRenderer.on('export:progress', (event, percent) => callback(percent));
+  },
+  
+  // Remove export progress listener
+  removeExportProgressListener: () => {
+    ipcRenderer.removeAllListeners('export:progress');
+  },
 });
 
