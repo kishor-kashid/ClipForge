@@ -12,28 +12,32 @@
 #### Production Dependencies
 ```json
 {
-  "electron": "Latest stable",
-  "react": "^18.0.0",
-  "react-dom": "^18.0.0",
-  "fluent-ffmpeg": "^2.1.2",
-  "ffmpeg-static": "^5.1.0"
+  "react": "^19.2.0",
+  "react-dom": "^19.2.0",
+  "fluent-ffmpeg": "^2.1.3",
+  "ffmpeg-static": "^5.2.0",
+  "@vitejs/plugin-react": "^4.7.0",
+  "vite": "^6.4.1"
 }
 ```
+Note: electron is in devDependencies (not production)
 
 #### Development Dependencies
 ```json
 {
-  "@vitejs/plugin-react": "^4.0.0",
-  "electron-builder": "^24.0.0",
-  "vitest": "^1.0.0",
-  "@testing-library/react": "^14.0.0",
-  "@testing-library/jest-dom": "^6.0.0",
-  "jsdom": "^23.0.0",
-  "concurrently": "^8.0.0",
-  "wait-on": "^7.0.0",
-  "tailwindcss": "^3.0.0",
-  "autoprefixer": "^10.0.0",
-  "postcss": "^8.0.0"
+  "electron": "^38.4.0",
+  "electron-builder": "^26.0.12",
+  "vitest": "^4.0.4",
+  "@testing-library/react": "^16.3.0",
+  "@testing-library/jest-dom": "^6.9.1",
+  "happy-dom": "^20.0.8",
+  "jsdom": "^27.0.1",
+  "concurrently": "^9.2.1",
+  "wait-on": "^9.0.1",
+  "tailwindcss": "^4.1.16",
+  "@tailwindcss/postcss": "^4.1.16",
+  "autoprefixer": "^10.4.21",
+  "postcss": "^8.5.6"
 }
 ```
 
@@ -88,9 +92,10 @@ npm run dev
 
 #### Electron Builder Config (`electron-builder.yml`)
 - App ID: `com.clipforge.app`
-- Windows NSIS installer
-- Include FFmpeg static binary
-- File associations for video formats
+- Windows NSIS installer (x64)
+- File associations for MP4, MOV, WebM
+- Code signing disabled for development
+- Output: `ClipForge-1.0.0-setup.exe`
 
 ## Environment & Configuration
 
@@ -254,7 +259,8 @@ npm run electron:build
 
 ### Output Location
 - **Build Artifacts**: `dist/` directory
-- **Installer**: `dist/ClipForge Setup 1.0.0.exe` (NSIS)
+- **Installer**: `dist/ClipForge-1.0.0-setup.exe` (NSIS)
+- **Unpacked App**: `dist/win-unpacked/ClipForge.exe`
 
 ### Distribution
 - GitHub Releases

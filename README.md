@@ -47,12 +47,12 @@ A desktop video editor for trimming and exporting videos. Built with Electron, R
    npm run build
    ```
 
-2. **Package for Windows** (when PR #8 is implemented)
+2. **Package for Windows**
    ```bash
    npm run electron:build
    ```
 
-   This creates a Windows installer in the `dist/` directory.
+   This creates a Windows installer (`ClipForge-1.0.0-setup.exe`) in the `dist/` directory.
 
 ## 📖 Usage Guide
 
