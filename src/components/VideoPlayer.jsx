@@ -9,6 +9,7 @@ export default function VideoPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Get the selected video object
   const selectedVideoObject = videos.find(v => v.path === selectedVideo);
@@ -16,6 +17,9 @@ export default function VideoPlayer() {
   // Load video when selection changes
   useEffect(() => {
     if (selectedVideoObject && videoRef.current) {
+      setIsLoading(true);
+      setError(null);
+      
       let videoSrc = null;
       let needsCleanup = false;
       
@@ -32,7 +36,6 @@ export default function VideoPlayer() {
       
       if (videoSrc && videoRef.current) {
         videoRef.current.src = videoSrc;
-        setError(null);
       }
       
       // Clean up object URL when component unmounts or video changes
@@ -66,6 +69,7 @@ export default function VideoPlayer() {
     if (videoRef.current) {
       const videoDuration = videoRef.current.duration;
       setDuration(videoDuration || 0);
+      setIsLoading(false);
       
       // Update duration in store
       if (selectedVideoObject && selectedVideoObject.path && (!selectedVideoObject.duration || selectedVideoObject.duration === 0)) {
@@ -75,6 +79,7 @@ export default function VideoPlayer() {
   };
 
   const handleError = () => {
+    setIsLoading(false);
     setError('Failed to load video. Please try another file.');
   };
 
@@ -131,6 +136,19 @@ export default function VideoPlayer() {
           controls={false}
         />
         
+        {/* Loading Overlay */}
+        {isLoading && !error && (
+          <div className="absolute inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center">
+            <div className="text-center">
+              <svg className="animate-spin h-12 w-12 text-white mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <p className="text-white font-semibold">Loading video...</p>
+            </div>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="absolute inset-0 bg-red-100 bg-opacity-90 flex items-center justify-center">

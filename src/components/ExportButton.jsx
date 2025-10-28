@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useVideoStore } from '../store/videoStore';
+import { formatTime } from '../utils/timeUtils';
 
 export default function ExportButton() {
   const { selectedVideo, getSelectedVideoObject, getTrimPoints } = useVideoStore();
@@ -10,6 +11,16 @@ export default function ExportButton() {
 
   // Get the selected video object
   const selectedVideoObject = getSelectedVideoObject();
+
+  // Get trim points for validation
+  const trimData = selectedVideo ? getTrimPoints(selectedVideo) : { inPoint: 0, outPoint: null };
+  const { inPoint, outPoint } = trimData;
+
+  // Calculate if trim points are valid
+  // If no trim points set (inPoint=0, outPoint=null), allow export
+  // If trim points are set, outPoint must be greater than inPoint
+  const hasValidTrim = outPoint === null || (outPoint !== null && outPoint > inPoint);
+  const shouldDisable = !selectedVideoObject || !hasValidTrim;
 
   // Setup progress listener
   useEffect(() => {
@@ -39,6 +50,31 @@ export default function ExportButton() {
       return;
     }
 
+    // Get trim points and validate
+    const trimData = getTrimPoints(selectedVideo);
+    const { inPoint, outPoint } = trimData;
+
+    // Validate trim points
+    if (outPoint !== null && outPoint !== undefined) {
+      if (outPoint <= inPoint) {
+        setErrorMessage('Invalid trim points: out-point must be greater than in-point');
+        setStatus('error');
+        return;
+      }
+      
+      if (selectedVideoObject.duration && outPoint > selectedVideoObject.duration) {
+        setErrorMessage(`Invalid trim points: out-point (${formatTime(outPoint)}) exceeds video duration (${formatTime(selectedVideoObject.duration)})`);
+        setStatus('error');
+        return;
+      }
+      
+      if (inPoint < 0) {
+        setErrorMessage('Invalid trim points: in-point cannot be negative');
+        setStatus('error');
+        return;
+      }
+    }
+
     try {
       setIsExporting(true);
       setStatus('exporting');
@@ -55,10 +91,6 @@ export default function ExportButton() {
       }
 
       const outputPath = saveResult.filePath;
-
-      // Step 2: Get trim points
-      const trimData = getTrimPoints(selectedVideo);
-      const { inPoint, outPoint } = trimData;
       
       // Calculate duration
       let duration = null;
@@ -139,9 +171,9 @@ export default function ExportButton() {
       {/* Export Button */}
       <button
         onClick={handleExport}
-        disabled={isExporting}
+        disabled={isExporting || shouldDisable}
         className={`w-full px-6 py-4 rounded-lg font-semibold text-lg transition-all ${
-          isExporting
+          isExporting || shouldDisable
             ? 'bg-gray-400 text-white cursor-not-allowed'
             : 'bg-green-600 text-white hover:bg-green-700'
         }`}
