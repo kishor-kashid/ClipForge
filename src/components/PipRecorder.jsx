@@ -235,12 +235,22 @@ function PipRecorder() {
         const result = await window.electronAPI.saveRecording(Array.from(uint8Array), 'webm');
         
         if (result.success) {
+          const timestamp = new Date();
+          const sourceName = availableScreens.find(s => s.id === selectedScreen)?.name || 'Screen';
+          
           addVideo({
             path: result.path,
-            name: `PiP Recording ${new Date().toLocaleTimeString()}`,
+            name: `PiP Recording ${timestamp.toLocaleTimeString()}`,
             duration: recordingDuration,
-          });
-          alert('PiP Recording saved successfully!');
+            isRecording: true,
+            recordingType: 'pip',
+            recordedAt: timestamp.toISOString(),
+            hasAudio: audioEnabled,
+            pipPosition,
+            screenSource: sourceName,
+          }, true); // Auto-select the new recording
+          
+          alert('PiP recording saved and added to timeline!');
         } else {
           alert('Failed to save recording: ' + result.error);
         }

@@ -163,12 +163,20 @@ function RecordingPanel() {
         const result = await window.electronAPI.saveRecording(Array.from(uint8Array), 'webm');
         
         if (result.success) {
+          const timestamp = new Date();
+          const recordingType = recordingMode === 'screen' ? 'Screen' : 'Webcam';
+          
           addVideo({
             path: result.path,
-            name: `${recordingMode === 'screen' ? 'Screen' : 'Webcam'} Recording ${new Date().toLocaleTimeString()}`,
+            name: `${recordingType} Recording ${timestamp.toLocaleTimeString()}`,
             duration: recordingDuration,
-          });
-          alert('Recording saved successfully!');
+            isRecording: true,
+            recordingType: recordingType.toLowerCase(),
+            recordedAt: timestamp.toISOString(),
+            hasAudio: audioEnabled,
+          }, true); // Auto-select the new recording
+          
+          alert(`${recordingType} recording saved and added to timeline!`);
         } else {
           alert('Failed to save recording: ' + result.error);
         }

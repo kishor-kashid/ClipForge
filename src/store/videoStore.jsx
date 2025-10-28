@@ -41,8 +41,9 @@ export function VideoProvider({ children }) {
   /**
    * Add a new video to the store
    * @param {Object} video - Video object with path, name, duration, etc.
+   * @param {boolean} autoSelect - Whether to auto-select this video (default: true for recordings)
    */
-  const addVideo = (video) => {
+  const addVideo = (video, autoSelect = false) => {
     if (!video || !video.path) {
       console.error('Invalid video object:', video);
       return;
@@ -55,12 +56,17 @@ export function VideoProvider({ children }) {
         console.warn('Video already exists:', video.path);
         return prevVideos;
       }
-      return [...prevVideos, { ...video, id: Date.now().toString() }];
+      return [...prevVideos, { 
+        ...video, 
+        id: Date.now().toString(),
+        addedAt: new Date().toISOString(),
+        isRecording: video.isRecording || false,
+      }];
     });
     
-    // Auto-select if this is the first video
+    // Auto-select if this is the first video OR if autoSelect is true (for recordings)
     setSelectedVideo((currentSelected) => {
-      if (currentSelected === null) {
+      if (currentSelected === null || autoSelect) {
         return video.path;
       }
       return currentSelected;
