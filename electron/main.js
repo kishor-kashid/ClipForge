@@ -121,6 +121,7 @@ ipcMain.handle('recording:getScreenSources', async () => {
     return sources.map(source => ({
       id: source.id,
       name: source.name,
+      type: source.id.startsWith('screen:') ? 'screen' : 'window',
       thumbnail: source.thumbnail.toDataURL()
     }));
   } catch (error) {

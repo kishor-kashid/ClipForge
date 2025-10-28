@@ -6,7 +6,7 @@ function RecordingPanel() {
   const { isRecording, recordingDuration, startRecording, stopRecording, addVideo } = useVideoStore();
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [previewStream, setPreviewStream] = useState(null);
-  const [recordingMode, setRecordingMode] = useState('screen'); // 'screen' or 'webcam'
+  const [recordingMode, setRecordingMode] = useState('screen');
   const [availableCameras, setAvailableCameras] = useState([]);
   const [selectedCamera, setSelectedCamera] = useState(null);
   const [availableMicrophones, setAvailableMicrophones] = useState([]);
@@ -15,7 +15,6 @@ function RecordingPanel() {
   const [audioStream, setAudioStream] = useState(null);
   const videoRef = useRef(null);
 
-  // Get available cameras and microphones on mount
   useEffect(() => {
     const getDevices = async () => {
       try {
@@ -37,7 +36,6 @@ function RecordingPanel() {
     getDevices();
   }, []);
 
-  // Handle cleanup when component unmounts or recording stops
   useEffect(() => {
     if (!isRecording) {
       if (previewStream) {
@@ -64,17 +62,16 @@ function RecordingPanel() {
     let micStream = null;
 
     if (recordingMode === 'screen') {
-      // Get screen sources using Electron API
       const sources = await window.electronAPI.getScreenSources();
-      
       if (!sources || sources.length === 0) {
         throw new Error('No screen sources available');
       }
-
-      // Select the first available source (usually main screen)
-      const source = sources[0];
-
-      // Request screen capture stream
+      
+      // Prefer actual screen sources over window sources
+      const screenSources = sources.filter(s => s.type === 'screen');
+      const source = screenSources.length > 0 ? screenSources[0] : sources[0];
+      
+      console.log('Screen recording - Selected source:', { id: source.id, name: source.name, type: source.type });
       videoStream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
@@ -85,7 +82,6 @@ function RecordingPanel() {
         },
       });
     } else {
-      // Request webcam stream
       try {
         videoStream = await navigator.mediaDevices.getUserMedia({
           audio: false,
@@ -102,7 +98,6 @@ function RecordingPanel() {
       }
     }
 
-    // Add audio if enabled
     if (audioEnabled) {
       try {
         micStream = await navigator.mediaDevices.getUserMedia({
@@ -121,9 +116,8 @@ function RecordingPanel() {
       }
     }
 
-    // Combine audio and video streams
     if (micStream) {
-      videoStream.getTracks().concat(micStream.getTracks()).forEach(track => {
+      micStream.getTracks().forEach(track => {
         if (!videoStream.getTracks().includes(track)) {
           videoStream.addTrack(track);
         }
@@ -136,21 +130,16 @@ function RecordingPanel() {
   const handleStartRecording = async () => {
     try {
       const stream = await getStreamForRecording();
-
       setPreviewStream(stream);
-
-      // Show preview in video element
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
 
-      // Create MediaRecorder with audio support
       const options = {
         mimeType: 'video/webm;codecs=vp9',
         videoBitsPerSecond: 2500000,
       };
 
-      // Fallback for browsers that don't support vp9
       if (!MediaRecorder.isTypeSupported(options.mimeType)) {
         options.mimeType = 'video/webm;codecs=vp8';
         if (!MediaRecorder.isTypeSupported(options.mimeType)) {
@@ -169,20 +158,16 @@ function RecordingPanel() {
 
       recorder.onstop = async () => {
         const blob = new Blob(chunks, { type: 'video/webm' });
-
-        // Convert blob to Uint8Array and save via Electron
         const arrayBuffer = await blob.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
         const result = await window.electronAPI.saveRecording(Array.from(uint8Array), 'webm');
         
         if (result.success) {
-          // Add recording to video store
           addVideo({
             path: result.path,
             name: `${recordingMode === 'screen' ? 'Screen' : 'Webcam'} Recording ${new Date().toLocaleTimeString()}`,
             duration: recordingDuration,
           });
-
           alert('Recording saved successfully!');
         } else {
           alert('Failed to save recording: ' + result.error);
@@ -203,18 +188,14 @@ function RecordingPanel() {
       mediaRecorder.stop();
       setMediaRecorder(null);
       stopRecording();
-
-      // Stop preview stream
       if (previewStream) {
         previewStream.getTracks().forEach(track => track.stop());
         setPreviewStream(null);
       }
-
       if (audioStream) {
         audioStream.getTracks().forEach(track => track.stop());
         setAudioStream(null);
       }
-
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
@@ -230,7 +211,6 @@ function RecordingPanel() {
         Recording
       </h3>
 
-      {/* Mode Toggle */}
       <div className="mb-3 flex gap-2">
         <button
           onClick={() => setRecordingMode('screen')}
@@ -256,7 +236,6 @@ function RecordingPanel() {
         </button>
       </div>
 
-      {/* Camera Selector (only shown in webcam mode) */}
       {recordingMode === 'webcam' && availableCameras.length > 1 && (
         <div className="mb-3">
           <label className="block text-sm text-[#b3b3b3] mb-1">Camera:</label>
@@ -275,7 +254,6 @@ function RecordingPanel() {
         </div>
       )}
 
-      {/* Audio Controls */}
       <div className="mb-3 space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-sm text-[#b3b3b3]">Audio:</label>
@@ -308,7 +286,6 @@ function RecordingPanel() {
         )}
       </div>
 
-      {/* Preview */}
       <div className="mb-3">
         <video
           ref={videoRef}
@@ -318,12 +295,11 @@ function RecordingPanel() {
         />
         {!previewStream && (
           <div className="flex items-center justify-center h-40 bg-black rounded border border-[#404040] text-[#b3b3b3] text-sm">
-            Click "Start Recording" to begin
+            Click Start Recording to begin
           </div>
         )}
       </div>
 
-      {/* Recording Status */}
       {isRecording && (
         <div className="mb-3 flex items-center justify-center gap-2 bg-[#1a1a1a] rounded p-2 border border-red-500/30">
           <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
@@ -333,7 +309,6 @@ function RecordingPanel() {
         </div>
       )}
 
-      {/* Controls */}
       <div className="flex gap-2">
         {!isRecording ? (
           <button
