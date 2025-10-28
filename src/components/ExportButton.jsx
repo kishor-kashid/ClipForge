@@ -129,25 +129,30 @@ export default function ExportButton() {
   // No video selected
   if (!selectedVideoObject) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-        <p className="text-gray-600">Select a video to export</p>
+      <div className="bg-[#252525] rounded-lg border border-[#404040] p-6 text-center">
+        <p className="text-[#b3b3b3]">Select a video to export</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Export</h2>
+    <div className="bg-[#252525] rounded-lg border border-[#404040] p-4">
+      <div className="flex items-center gap-2 mb-4">
+        <svg className="w-5 h-5 text-[#4ade80]" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+        <h2 className="text-lg font-bold text-white">Export</h2>
+      </div>
 
       {/* Status Message */}
       {status === 'success' && (
-        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+        <div className="mb-4 p-3 bg-green-900 bg-opacity-20 border border-green-500 text-green-300 rounded text-sm">
           ✓ Export completed successfully!
         </div>
       )}
 
       {status === 'error' && errorMessage && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-4 p-3 bg-red-900 bg-opacity-20 border border-red-500 text-red-300 rounded text-sm">
           ✗ {errorMessage}
         </div>
       )}
@@ -156,12 +161,12 @@ export default function ExportButton() {
       {isExporting && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700">Exporting...</span>
-            <span className="text-sm text-gray-600">{Math.round(progress)}%</span>
+            <span className="text-sm font-semibold text-[#b3b3b3]">Exporting...</span>
+            <span className="text-sm text-[#b3b3b3]">{Math.round(progress)}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-[#2d2d2d] rounded-full h-2 overflow-hidden">
             <div
-              className="bg-blue-600 h-full transition-all duration-300"
+              className="bg-[#4a9eff] h-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -172,10 +177,10 @@ export default function ExportButton() {
       <button
         onClick={handleExport}
         disabled={isExporting || shouldDisable}
-        className={`w-full px-6 py-4 rounded-lg font-semibold text-lg transition-all ${
+        className={`w-full px-4 py-3 rounded-lg font-semibold text-base transition-all ${
           isExporting || shouldDisable
-            ? 'bg-gray-400 text-white cursor-not-allowed'
-            : 'bg-green-600 text-white hover:bg-green-700'
+            ? 'bg-[#404040] text-[#666] cursor-not-allowed'
+            : 'bg-[#16a34a] text-white hover:bg-[#15803d]'
         }`}
       >
         {isExporting ? (
@@ -192,8 +197,8 @@ export default function ExportButton() {
       </button>
 
       {/* Info */}
-      <div className="mt-4 text-sm text-gray-600">
-        <p>Exports the selected video with trim points applied (if set)</p>
+      <div className="mt-3 text-xs text-[#b3b3b3]">
+        <p>Exports selected video with trim points</p>
       </div>
     </div>
   );
