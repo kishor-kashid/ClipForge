@@ -24,5 +24,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeExportProgressListener: () => {
     ipcRenderer.removeAllListeners('export:progress');
   },
+  
+  // Recording APIs
+  getScreenSources: () => ipcRenderer.invoke('recording:getScreenSources'),
+  saveRecording: (buffer, extension) => ipcRenderer.invoke('recording:save', buffer, extension),
 });
 

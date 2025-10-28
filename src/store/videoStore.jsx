@@ -12,10 +12,31 @@ export function VideoProvider({ children }) {
   const selectedVideoRef = React.useRef(null);
   const [trimPoints, setTrimPoints] = useState({});
   
+  // Recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingStartTime, setRecordingStartTime] = useState(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  
   // Keep ref in sync with state
   React.useEffect(() => {
     selectedVideoRef.current = selectedVideo;
   }, [selectedVideo]);
+  
+  // Recording timer effect
+  React.useEffect(() => {
+    let interval = null;
+    if (isRecording && recordingStartTime) {
+      interval = setInterval(() => {
+        const elapsed = (Date.now() - recordingStartTime) / 1000;
+        setRecordingDuration(elapsed);
+      }, 100);
+    } else if (!isRecording) {
+      setRecordingDuration(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRecording, recordingStartTime]);
 
   /**
    * Add a new video to the store
@@ -132,6 +153,24 @@ export function VideoProvider({ children }) {
     return trimPoints[videoPath] || { inPoint: 0, outPoint: null };
   };
 
+  /**
+   * Start recording
+   */
+  const startRecording = () => {
+    setIsRecording(true);
+    setRecordingStartTime(Date.now());
+    setRecordingDuration(0);
+  };
+
+  /**
+   * Stop recording
+   */
+  const stopRecording = () => {
+    setIsRecording(false);
+    setRecordingStartTime(null);
+    setRecordingDuration(0);
+  };
+
   const value = {
     videos,
     selectedVideo,
@@ -144,6 +183,11 @@ export function VideoProvider({ children }) {
     setInPoint,
     setOutPoint,
     getTrimPoints,
+    // Recording state
+    isRecording,
+    recordingDuration,
+    startRecording,
+    stopRecording,
   };
 
   return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;
