@@ -16,6 +16,15 @@ export default function Timeline() {
     selectedVideo,
     selectVideo,
     getTrimPoints,
+    // Zoom and snap
+    zoomLevel,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    snapEnabled,
+    toggleSnap,
+    snapToGrid,
+    snapToEdge,
   } = useVideoStore();
 
   const [draggedClip, setDraggedClip] = useState(null);
@@ -58,7 +67,15 @@ export default function Timeline() {
     const trackElement = e.currentTarget;
     const rect = trackElement.getBoundingClientRect();
     const x = e.clientX - rect.left + trackElement.scrollLeft;
-    const dropTime = Math.max(0, x / pixelsPerSecond);
+    let dropTime = Math.max(0, x / pixelsPerSecond);
+    
+    // Apply snapping
+    const edgeSnap = snapToEdge(dropTime, trackId, draggedClip?.id);
+    if (edgeSnap !== null) {
+      dropTime = edgeSnap;
+    } else {
+      dropTime = snapToGrid(dropTime);
+    }
     
     if (draggedFromLibrary) {
       // Adding from library
@@ -76,7 +93,7 @@ export default function Timeline() {
         addClipToTrack(trackId, {
           videoPath: video.path,
           duration: effectiveDuration,
-          startTime: Math.round(dropTime * 10) / 10, // Round to 0.1s
+          startTime: dropTime,
         });
       }
       setDraggedFromLibrary(null);
@@ -100,7 +117,7 @@ export default function Timeline() {
         addClipToTrack(trackId, {
           videoPath: video.path,
           duration: effectiveDuration,
-          startTime: Math.round(dropTime * 10) / 10, // Round to 0.1s
+          startTime: dropTime,
         });
       }
       setDraggedClip(null);
@@ -137,7 +154,8 @@ export default function Timeline() {
   };
 
   const totalDuration = getTotalDuration();
-  const pixelsPerSecond = 10; // Scale factor
+  const basePixelsPerSecond = 10; // Base scale factor
+  const pixelsPerSecond = basePixelsPerSecond * zoomLevel; // Apply zoom
 
   return (
     <div className="bg-[#252525] rounded-lg border border-[#404040] p-4">
@@ -150,8 +168,63 @@ export default function Timeline() {
           <h2 className="text-xl font-bold text-white">Timeline</h2>
         </div>
         
-        {/* Track controls */}
-        <div className="flex gap-2">
+        {/* Zoom and Track controls */}
+        <div className="flex gap-4 items-center">
+          {/* Zoom controls */}
+          <div className="flex items-center gap-2 bg-[#1a1a1a] rounded-lg px-3 py-1.5 border border-[#404040]">
+            <button
+              onClick={zoomOut}
+              className="text-[#b3b3b3] hover:text-white transition-colors"
+              title="Zoom Out (25%)"
+              disabled={zoomLevel <= 0.25}
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M5 8a1 1 0 011-1h4a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <span className="text-xs text-[#b3b3b3] min-w-[45px] text-center font-mono">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button
+              onClick={zoomIn}
+              className="text-[#b3b3b3] hover:text-white transition-colors"
+              title="Zoom In (400%)"
+              disabled={zoomLevel >= 4}
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M8 5a1 1 0 011 1v1h1a1 1 0 110 2H9v1a1 1 0 11-2 0V9H6a1 1 0 110-2h1V6a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <button
+              onClick={resetZoom}
+              className="ml-1 text-[#666] hover:text-[#4a9eff] transition-colors text-xs"
+              title="Reset to 100%"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Snap toggle */}
+          <button
+            onClick={toggleSnap}
+            className={`px-3 py-1.5 rounded text-sm flex items-center gap-1 transition-colors ${
+              snapEnabled 
+                ? 'bg-[#4a9eff] hover:bg-[#3080df] text-white' 
+                : 'bg-[#404040] hover:bg-[#505050] text-[#b3b3b3]'
+            }`}
+            title={snapEnabled ? 'Snap Enabled' : 'Snap Disabled'}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM13 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z" />
+            </svg>
+            Snap
+          </button>
+
+          {/* Track controls */}
           <button
             onClick={addTrack}
             className="px-3 py-1.5 bg-[#404040] hover:bg-[#505050] text-white rounded text-sm flex items-center gap-1 transition-colors"
@@ -274,8 +347,12 @@ export default function Timeline() {
               onDragOver={(e) => handleDragOver(e, track.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDropOnTrack(e, track.id)}
-              style={{ minWidth: `${totalDuration * pixelsPerSecond}px` }}
             >
+              {/* Scrollable content wrapper */}
+              <div
+                className="relative h-full"
+                style={{ width: `${totalDuration * pixelsPerSecond}px`, minWidth: '100%' }}
+              >
               {/* Time ruler (background) */}
               <div className="absolute inset-0 flex">
                 {Array.from({ length: Math.ceil(totalDuration / 10) }).map((_, i) => (
@@ -288,6 +365,19 @@ export default function Timeline() {
                   </div>
                 ))}
               </div>
+
+              {/* Grid lines (shown when zoomed or snap enabled) */}
+              {(zoomLevel > 1 || snapEnabled) && (
+                <div className="absolute inset-0 flex pointer-events-none">
+                  {Array.from({ length: Math.ceil(totalDuration) }).map((_, i) => (
+                    <div
+                      key={`grid-${i}`}
+                      className="flex-shrink-0 border-r border-[#2a2a2a]"
+                      style={{ width: `${pixelsPerSecond}px` }}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Clips */}
               {track.clips.length === 0 ? (
@@ -393,6 +483,7 @@ export default function Timeline() {
                   </div>
                 </div>
               )}
+              </div> {/* End scrollable content wrapper */}
             </div>
           </div>
         ))}

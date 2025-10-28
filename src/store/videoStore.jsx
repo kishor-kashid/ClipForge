@@ -24,6 +24,11 @@ export function VideoProvider({ children }) {
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
   
+  // Timeline zoom and snap state
+  const [zoomLevel, setZoomLevel] = useState(1); // 1 = 100%, 0.5 = 50%, 2 = 200%
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [snapInterval, setSnapInterval] = useState(1); // Snap to 1 second intervals
+  
   // Keep ref in sync with state
   React.useEffect(() => {
     selectedVideoRef.current = selectedVideo;
@@ -338,6 +343,92 @@ export function VideoProvider({ children }) {
     );
   };
 
+  /**
+   * Zoom in on timeline
+   */
+  const zoomIn = () => {
+    setZoomLevel((prev) => Math.min(prev + 0.25, 4)); // Max 400%
+  };
+
+  /**
+   * Zoom out on timeline
+   */
+  const zoomOut = () => {
+    setZoomLevel((prev) => Math.max(prev - 0.25, 0.25)); // Min 25%
+  };
+
+  /**
+   * Set zoom level directly
+   * @param {number} level - Zoom level (0.25 to 4)
+   */
+  const setZoom = (level) => {
+    setZoomLevel(Math.max(0.25, Math.min(4, level)));
+  };
+
+  /**
+   * Reset zoom to 100%
+   */
+  const resetZoom = () => {
+    setZoomLevel(1);
+  };
+
+  /**
+   * Toggle snap to grid
+   */
+  const toggleSnap = () => {
+    setSnapEnabled((prev) => !prev);
+  };
+
+  /**
+   * Snap a time value to the grid
+   * @param {number} time - Time in seconds
+   * @returns {number} - Snapped time
+   */
+  const snapToGrid = (time) => {
+    if (!snapEnabled) return time;
+    return Math.round(time / snapInterval) * snapInterval;
+  };
+
+  /**
+   * Find the nearest clip edge for snapping
+   * @param {number} time - Time in seconds
+   * @param {string} trackId - Track ID to check
+   * @param {string} excludeClipId - Clip ID to exclude from snap detection
+   * @returns {number|null} - Snapped time or null if no edge nearby
+   */
+  const snapToEdge = (time, trackId, excludeClipId = null) => {
+    if (!snapEnabled) return null;
+    
+    const track = tracks.find((t) => t.id === trackId);
+    if (!track) return null;
+
+    const snapThreshold = 0.5; // 0.5 seconds threshold for edge snapping
+    let nearestEdge = null;
+    let minDistance = snapThreshold;
+
+    track.clips.forEach((clip) => {
+      if (clip.id === excludeClipId) return;
+
+      const clipStart = clip.startTime || 0;
+      const clipEnd = clipStart + (clip.duration || 0);
+
+      // Check distance to clip edges
+      const distToStart = Math.abs(time - clipStart);
+      const distToEnd = Math.abs(time - clipEnd);
+
+      if (distToStart < minDistance) {
+        minDistance = distToStart;
+        nearestEdge = clipStart;
+      }
+      if (distToEnd < minDistance) {
+        minDistance = distToEnd;
+        nearestEdge = clipEnd;
+      }
+    });
+
+    return nearestEdge;
+  };
+
   const value = {
     videos,
     selectedVideo,
@@ -365,6 +456,17 @@ export function VideoProvider({ children }) {
     removeClipFromTrack,
     updateClipPosition,
     splitClip,
+    // Zoom and snap
+    zoomLevel,
+    setZoomLevel: setZoom,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    snapEnabled,
+    snapInterval,
+    toggleSnap,
+    snapToGrid,
+    snapToEdge,
   };
 
   return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;
