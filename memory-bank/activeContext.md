@@ -1,9 +1,9 @@
 # ClipForge - Active Context
 
 ## Current Status
-**Phase**: Final Submission - Recording Features Complete
+**Phase**: Final Submission - Timeline Advanced Features Complete
 **Date**: October 28, 2025
-**Focus**: Recording features implemented (Screen, Webcam, Audio, PiP), moving to advanced timeline and export features
+**Focus**: Timeline advanced features implemented (drag-drop, split, multi-track), moving to export options and submission materials
 
 ## Recent Changes
 - ✅ PR #1-#10 Complete: MVP implementation
@@ -34,8 +34,34 @@
   - Fixed animation loop for continuous drawing
   - Fixed screen source selection to prefer entire screen over app window
   - Canvas captures at 30 FPS for smooth recording
+- ✅ PR #15 Complete: Recording Integration
+  - Recordings automatically added to timeline
+  - Recording metadata (type, audio status, PiP position) stored
+  - Visual "REC" badges on recorded clips
+  - Auto-selection of newly recorded videos
+- ✅ PR #16 Complete: Timeline Advanced Features
+  - Drag-and-drop from video library to timeline tracks
+  - Visual drop indicator with timestamp
+  - Clip repositioning within and between tracks
+  - Clip splitting at playhead position in VideoPlayer
+  - Multiple tracks support (2+ tracks with add/remove controls)
+  - Effective duration calculation based on trim points
+  - Visual differentiation for split clips (purple background, "SPLIT" badge)
+  - FFmpeg timeline export with multi-track concatenation
 
 ## Current Work Focus
+
+### Timeline Advanced Features Status
+- ✅ Drag-and-drop from video library to timeline tracks
+- ✅ Visual drop indicator with green line and timestamp
+- ✅ Clip repositioning within and between tracks
+- ✅ Clip splitting at playhead position in VideoPlayer
+- ✅ Multiple tracks support (2+ tracks with add/remove controls)
+- ✅ Effective duration calculation based on trim points
+- ✅ Visual differentiation for split clips (purple background, "SPLIT" badge)
+- ✅ FFmpeg timeline export with multi-track concatenation
+- ✅ Video library shows effective durations for split clips
+- ✅ Timeline clips show correct widths based on trimmed duration
 
 ### Recording Features Status
 - ✅ Screen recording with desktopCapturer
@@ -46,20 +72,21 @@
 - ✅ Camera and microphone selection dropdowns
 - ✅ Recording state management in videoStore
 - ✅ Save recordings via IPC handlers
+- ✅ Recordings automatically integrated into timeline
 
 ### Immediate Next Steps (Final Submission Requirements)
-1. **Advanced Timeline Features** (PR #15-#18)
-   - Drag clips onto timeline
-   - Split clips at playhead position
-   - Multiple tracks support (at least 2 tracks)
+1. **Timeline Zoom Features** (PR #17)
    - Zoom in/out on timeline
+   - Timeline navigation controls
+   - Snap to grid functionality
 
-2. **Advanced Export Features** (PR #19)
+2. **Advanced Export Features** (PR #18-#19)
    - Resolution options (720p, 1080p, source)
+   - Export quality settings
    - Cloud upload (bonus feature)
 
 3. **Submission Materials** (PR #20)
-   - Test all recording features (screen, webcam, audio, PiP)
+   - Test all advanced timeline features
    - Record 3-5 minute demo video
    - Create GitHub release with installer
    - Package app for final submission
@@ -91,6 +118,13 @@
   - Recordings saved using Blob → Uint8Array → IPC → fs.writeFile
   - Animation loop uses requestAnimationFrame for canvas drawing
   - Stream cleanup in useEffect hooks to prevent memory leaks
+- **Timeline Architecture**:
+  - Multi-track state management with tracks array
+  - Clip positioning based on startTime and effective duration
+  - Drag-and-drop with visual feedback and position calculation
+  - Split clips maintain originalPath reference for video loading
+  - Effective duration calculation from trim points (inPoint/outPoint)
+  - Visual differentiation for split clips (purple styling, badges)
 
 ### Current Enhancements
 - **Professional UI**: Complete dark theme redesign for video editor aesthetic
@@ -104,6 +138,11 @@
 - **PiP Recorder**: Separate component with canvas compositing for simultaneous recording
 - **Source Selection**: Dropdown to choose screen/window sources explicitly
 - **Device Selection**: Camera and microphone dropdowns for user control
+- **Timeline Advanced**: Drag-and-drop with visual feedback and position calculation
+- **Multi-Track Support**: 2+ tracks with add/remove controls and visual track headers
+- **Clip Splitting**: Split button in VideoPlayer with trim point validation
+- **Visual Differentiation**: Purple styling and "SPLIT" badges for split clips
+- **Effective Duration**: Timeline shows correct durations based on trim points
 
 ## Learning Notes
 
@@ -129,6 +168,10 @@
 - MediaStream management and cleanup ✅
 - Blob to ArrayBuffer conversion for IPC ✅
 - Device enumeration for user selection ✅
+- Drag-and-drop with visual feedback ✅
+- Multi-track state management ✅
+- Clip splitting with trim point validation ✅
+- Effective duration calculation from trim points ✅
 
 ### Packaging Learnings
 - electron must be in devDependencies, not dependencies
@@ -145,6 +188,15 @@
 - Blob data must be converted to Uint8Array for IPC transmission
 - MediaStreams must be explicitly stopped to release device resources
 
+### Timeline Implementation Learnings
+- Drag-and-drop requires mouse coordinate to timeline position calculation
+- Clip positioning needs both startTime and effective duration for accurate display
+- Split clips must maintain originalPath reference for video loading
+- Effective duration calculation requires trim point validation (inPoint/outPoint)
+- Visual feedback improves user experience (drop indicators, color coding)
+- Multi-track state management requires careful clip-to-track relationships
+- FFmpeg concatenation works well for sequential clip export
+
 ## Risk Mitigation
 
 ### Mitigated Risks
@@ -155,13 +207,16 @@
 5. **Recording Features**: ✅ All 4 recording modes implemented and tested
 6. **Screen Capture Issues**: ✅ Fixed source selection and animation loop
 7. **PiP Complexity**: ✅ Isolated in separate component with canvas compositing
+8. **Timeline Advanced Features**: ✅ Drag-drop, split, multi-track implemented
+9. **Clip Duration Display**: ✅ Fixed effective duration calculation from trim points
+10. **Split Clip Loading**: ✅ Fixed originalPath reference for video loading
 
 ### Remaining Risks
-- **Timeline Advanced Features**: Drag, split, multi-track, zoom need implementation
+- **Timeline Zoom Features**: Zoom in/out, navigation controls need implementation
 - **Export Options**: Resolution selection not yet implemented
 - **Demo Video**: Need to record showing all features
-- **Packaged App Testing**: Need to verify recordings work in packaged app
-- **Time Pressure**: ~56 hours remaining, multiple PRs still needed
+- **Packaged App Testing**: Need to verify advanced timeline features work in packaged app
+- **Time Pressure**: ~40 hours remaining, export options and submission materials needed
 
 ## Next Milestone
 **Milestone**: Ready for Final Submission
@@ -172,17 +227,23 @@
   - ✅ Webcam recording
   - ✅ Audio capture
   - ✅ PiP recording
-- ⏳ Timeline advanced features (PR #15-18)
-- ⏳ Export advanced features (PR #19)
+- ✅ Recording integration implemented (PR #15)
+- ✅ Timeline advanced features implemented (PR #16)
+  - ✅ Drag-and-drop functionality
+  - ✅ Clip splitting
+  - ✅ Multiple tracks support
+  - ✅ Effective duration display
+- ⏳ Timeline zoom features (PR #17)
+- ⏳ Export advanced features (PR #18-19)
 - ⏳ Submission materials (PR #20)
   - ⏳ Test all features
   - ⏳ Demo video recorded
   - ⏳ GitHub release created
 
 ## Active Questions
-- Should we prioritize timeline advanced features or export options?
+- Should we prioritize timeline zoom features or export options?
 - Is cloud upload bonus feature worth the implementation time?
-- What level of testing is expected for recording features?
+- What level of testing is expected for advanced timeline features?
 
 ## Configuration Issues Resolved
 - ✅ Fixed index.html location (moved from public/ to root)
@@ -198,6 +259,9 @@
 - ✅ Fixed PiP animation loop (check active streams, not recording state)
 - ✅ Fixed screen source selection (filter by type 'screen', user dropdown)
 - ✅ Fixed canvas video rendering (use off-screen positioning, not hidden class)
+- ✅ Fixed split clip loading (use originalPath for video source)
+- ✅ Fixed timeline duration display (calculate effective duration from trim points)
+- ✅ Fixed drag-and-drop positioning (calculate drop position from mouse coordinates)
 
 ## Communication Notes
 - User has reviewed PRD and architecture
@@ -208,6 +272,14 @@
   - Fixed screen capture stuck on app window (source selection)
   - Added explicit screen/window source dropdown
   - All 4 recording modes working: Screen, Webcam, Audio, PiP
-- User confirmed recording issues resolved after fixes
-- Memory bank updated with recording implementation details
-- Next: Timeline advanced features (drag, split, multi-track, zoom)
+- Recording integration (PR #15) implemented successfully
+- Timeline advanced features (PR #16) implemented with fixes:
+  - Fixed drag-and-drop positioning calculation
+  - Fixed split clip loading using originalPath
+  - Fixed timeline duration display for trimmed clips
+  - Added visual differentiation for split clips (purple styling, badges)
+  - Implemented multi-track support with add/remove controls
+  - Added FFmpeg timeline export with concatenation
+- User confirmed timeline issues resolved after fixes
+- Memory bank updated with timeline implementation details
+- Next: Timeline zoom features and export options

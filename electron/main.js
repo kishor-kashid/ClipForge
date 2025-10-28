@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, desktopCapturer } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { exportVideo } = require('./ffmpeg');
+const { exportVideo, exportTimeline } = require('./ffmpeg');
 
 // Better dev detection - check if app is packaged
 const isDev = !app.isPackaged;
@@ -96,6 +96,33 @@ ipcMain.handle('export:video', async (event, params) => {
     // Export video with progress updates
     const exportedPath = await exportVideo(
       { inputPath, outputPath, startTime, duration },
+      (percent) => {
+        // Send progress updates to renderer
+        mainWindow.webContents.send('export:progress', percent);
+      }
+    );
+
+    return { success: true, path: exportedPath };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+/**
+ * Handle timeline export with FFmpeg
+ */
+ipcMain.handle('export:timeline', async (event, params) => {
+  try {
+    const { tracks, outputPath, videos } = params;
+
+    // Validate parameters
+    if (!tracks || !outputPath || !videos) {
+      throw new Error('Tracks, output path, and videos are required');
+    }
+
+    // Export timeline with progress updates
+    const exportedPath = await exportTimeline(
+      { tracks, outputPath, videos },
       (percent) => {
         // Send progress updates to renderer
         mainWindow.webContents.send('export:progress', percent);
