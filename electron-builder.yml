@@ -1,0 +1,36 @@
+appId: com.clipforge.app
+productName: ClipForge
+directories:
+  output: dist
+files:
+  - electron/**
+  - dist/**/*.html
+  - dist/**/*.js
+  - dist/**/*.css
+  - dist/**/*.json
+  - package.json
+win:
+  target: 
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+  signAndEditExecutable: false
+  forceCodeSigning: false
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  allowElevation: true
+  artifactName: "${productName}-${version}-setup.${ext}"
+fileAssociations:
+  - ext: mp4
+    name: MP4 Video File
+    role: Editor
+  - ext: mov
+    name: QuickTime Video File
+    role: Editor
+  - ext: webm
+    name: WebM Video File
+    role: Editor
+
