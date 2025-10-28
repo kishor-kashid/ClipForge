@@ -23,6 +23,7 @@ export function VideoProvider({ children }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [recordingStream, setRecordingStream] = useState(null);
   
   // Timeline zoom and snap state
   const [zoomLevel, setZoomLevel] = useState(1); // 1 = 100%, 0.5 = 50%, 2 = 200%
@@ -191,10 +192,12 @@ export function VideoProvider({ children }) {
   /**
    * Start recording
    */
-  const startRecording = () => {
+  const startRecording = (stream = null) => {
     setIsRecording(true);
     setRecordingStartTime(Date.now());
     setRecordingDuration(0);
+    setRecordingStream(stream);
+    console.log('VideoStore: Recording started with stream:', stream);
   };
 
   /**
@@ -204,6 +207,8 @@ export function VideoProvider({ children }) {
     setIsRecording(false);
     setRecordingStartTime(null);
     setRecordingDuration(0);
+    setRecordingStream(null);
+    console.log('VideoStore: Recording stopped');
   };
 
   /**
@@ -596,6 +601,7 @@ export function VideoProvider({ children }) {
     // Recording state
     isRecording,
     recordingDuration,
+    recordingStream,
     startRecording,
     stopRecording,
     // Timeline and tracks

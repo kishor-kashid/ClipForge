@@ -3,7 +3,9 @@ import { VideoProvider } from './store/videoStore';
 import { ToastProvider } from './components/ToastProvider';
 import VideoPlayer from './components/VideoPlayer';
 import Timeline from './components/Timeline';
-import ControlPanel from './components/ControlPanel';
+import ImportRecordPanel from './components/ImportRecordPanel';
+import VideoGrid from './components/VideoGrid';
+import EditExportPanel from './components/EditExportPanel';
 import QuickActionsToolbar from './components/QuickActionsToolbar';
 import { useKeyboardShortcutsEffect } from './utils/keyboardShortcuts';
 
@@ -30,18 +32,26 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Preview Section */}
-        <div className="flex-1 flex flex-col md:flex-row bg-[#1a1a1a]">
-          {/* Left Panel - Preview */}
+        {/* Three Panel Layout */}
+        <div className="flex-1 flex bg-[#1a1a1a]">
+          {/* Left Panel - Import/Record + Video Library */}
+          <div className="w-80 bg-[#1a1a1a] border-r border-[#404040] p-4 overflow-y-auto">
+            <div className="space-y-4">
+              <ImportRecordPanel />
+              <VideoGrid />
+            </div>
+          </div>
+
+          {/* Center Panel - Video Player */}
           <div className="flex-1 flex flex-col bg-[#1a1a1a] p-4">
             <div className="flex-1">
               <VideoPlayer />
             </div>
           </div>
 
-          {/* Right Panel - Controls */}
-          <div className="w-full md:w-96 bg-[#1a1a1a] border-t md:border-t-0 md:border-l border-[#404040] p-4 overflow-y-auto">
-            <ControlPanel />
+          {/* Right Panel - Edit/Export Controls */}
+          <div className="w-80 bg-[#1a1a1a] border-l border-[#404040] p-4 overflow-y-auto">
+            <EditExportPanel />
           </div>
         </div>
 

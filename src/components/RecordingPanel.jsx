@@ -293,7 +293,9 @@ function RecordingPanel() {
 
       recorder.start();
       setMediaRecorder(recorder);
-      startRecording();
+      startRecording(stream); // Pass stream to videoStore
+      
+      console.log('RecordingPanel: Started recording with stream:', stream);
     } catch (error) {
       console.error('Error starting recording:', error);
       addToast('Failed to start recording: ' + error.message, 'error');
@@ -421,10 +423,12 @@ function RecordingPanel() {
 
       recorder.start();
       setMediaRecorder(recorder);
-      startRecording();
+      startRecording(stream); // Pass stream to videoStore
       
       // Start the continuous drawing loop after recording begins
       drawToCanvas();
+      
+      console.log('RecordingPanel: Started PiP recording with stream:', stream);
     } catch (error) {
       console.error('Error starting PiP recording:', error);
       addToast('Failed to start PiP recording: ' + error.message, 'error');
@@ -600,46 +604,21 @@ function RecordingPanel() {
       </div>
 
       <div className="mb-3">
-        {/* Regular video preview for screen/webcam */}
-        {recordingMode !== 'pip' && (
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            className="w-full h-40 bg-black rounded border border-[#404040] object-contain"
-          />
-        )}
-        
-        {/* Canvas preview for PiP */}
-        {recordingMode === 'pip' && (
-          <div className="relative">
-            <video ref={screenVideoRef} autoPlay muted className="absolute -top-[9999px]" />
-            <video ref={webcamVideoRef} autoPlay muted className="absolute -top-[9999px]" />
-            <canvas ref={canvasRef} className="w-full h-40 bg-black rounded border border-[#404040]" />
-            {!canvasStream && (
-              <div className="flex items-center justify-center h-40 bg-black rounded border border-[#404040] text-[#b3b3b3] text-sm -mt-40">
-                Click Start Recording to begin
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* Fallback for non-PiP modes */}
-        {recordingMode !== 'pip' && !previewStream && (
-          <div className="flex items-center justify-center h-40 bg-black rounded border border-[#404040] text-[#b3b3b3] text-sm">
-            Click Start Recording to begin
+        {/* Recording status indicator */}
+        {isRecording && (
+          <div className="flex items-center justify-center gap-2 bg-[#1a1a1a] rounded p-3 border border-red-500/30">
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+            <span className="text-white font-mono text-lg">
+              {formatTime(Math.floor(recordingDuration))}
+            </span>
+            <span className="text-red-400 text-sm">
+              {recordingMode === 'pip' ? 'PiP Recording' : 
+               recordingMode === 'screen' ? 'Screen Recording' : 
+               'Webcam Recording'}
+            </span>
           </div>
         )}
       </div>
-
-      {isRecording && (
-        <div className="mb-3 flex items-center justify-center gap-2 bg-[#1a1a1a] rounded p-2 border border-red-500/30">
-          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-          <span className="text-white font-mono text-lg">
-            {formatTime(Math.floor(recordingDuration))}
-          </span>
-        </div>
-      )}
 
       <div className="flex gap-2">
         {!isRecording ? (

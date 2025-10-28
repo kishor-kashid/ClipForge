@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 
+// Global thumbnail cache to share thumbnails between components
+const thumbnailCache = new Map();
+
 /**
- * Hook to generate video thumbnails
+ * Hook to generate video thumbnails with caching
  * @param {string} videoPath - Path to video file
  * @param {number} timeOffset - Time in seconds to capture thumbnail
  * @returns {string|null} - Data URL of thumbnail or null
  */
 export const useVideoThumbnail = (videoPath, timeOffset = 0) => {
-  const [thumbnail, setThumbnail] = useState(null);
+  const cacheKey = `${videoPath}-${timeOffset}`;
+  const [thumbnail, setThumbnail] = useState(thumbnailCache.get(cacheKey) || null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -16,20 +20,33 @@ export const useVideoThumbnail = (videoPath, timeOffset = 0) => {
       return;
     }
 
+    // Check cache first
+    const cachedThumbnail = thumbnailCache.get(cacheKey);
+    if (cachedThumbnail) {
+      console.log('Using cached thumbnail for:', videoPath);
+      setThumbnail(cachedThumbnail);
+      return;
+    }
+
     const generateThumbnail = async () => {
       setLoading(true);
       try {
+        console.log('Generating thumbnail for:', videoPath, 'at time:', timeOffset);
+        
         // Create a video element to capture frame
         const video = document.createElement('video');
         video.crossOrigin = 'anonymous';
         video.preload = 'metadata';
+        video.muted = true; // Ensure video is muted to avoid autoplay issues
         
         return new Promise((resolve) => {
           video.onloadedmetadata = () => {
+            console.log('Video metadata loaded, duration:', video.duration);
             video.currentTime = Math.min(timeOffset, video.duration || 0);
           };
           
           video.onseeked = () => {
+            console.log('Video seeked to time:', video.currentTime);
             const canvas = document.createElement('canvas');
             canvas.width = 160; // Thumbnail width
             canvas.height = 90; // Thumbnail height (16:9 aspect ratio)
@@ -38,11 +55,15 @@ export const useVideoThumbnail = (videoPath, timeOffset = 0) => {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
             const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+            console.log('Thumbnail generated successfully');
+            
+            // Cache the thumbnail
+            thumbnailCache.set(cacheKey, dataURL);
             resolve(dataURL);
           };
           
-          video.onerror = () => {
-            console.warn('Failed to load video for thumbnail:', videoPath);
+          video.onerror = (e) => {
+            console.warn('Failed to load video for thumbnail:', videoPath, e);
             resolve(null);
           };
           
@@ -57,7 +78,7 @@ export const useVideoThumbnail = (videoPath, timeOffset = 0) => {
     };
 
     generateThumbnail().then(setThumbnail);
-  }, [videoPath, timeOffset]);
+  }, [videoPath, timeOffset, cacheKey]);
 
   return { thumbnail, loading };
 };
@@ -88,19 +109,41 @@ export const VideoThumbnail = ({ videoPath, timeOffset = 0, className = '', widt
         className={`bg-[#404040] flex items-center justify-center ${className}`}
         style={{ width: `${width}px`, height: `${height}px` }}
       >
-        <svg className="w-4 h-4 text-[#666]" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-        </svg>
+        <div className="text-center">
+          <svg className="w-6 h-6 text-[#666] mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+          </svg>
+          <div className="text-[10px] text-[#666]">No Preview</div>
+        </div>
       </div>
     );
   }
+
+  console.log('Rendering img element:', { 
+    videoPath, 
+    thumbnailLength: thumbnail?.length, 
+    thumbnailPrefix: thumbnail?.substring(0, 30),
+    width, 
+    height,
+    className 
+  });
 
   return (
     <img 
       src={thumbnail} 
       alt="Video thumbnail"
       className={`object-cover ${className}`}
-      style={{ width: `${width}px`, height: `${height}px` }}
+      style={{ 
+        width: `${width}px`, 
+        height: `${height}px`,
+        display: 'block'
+      }}
+      onLoad={() => {
+        console.log('Thumbnail image loaded successfully:', videoPath);
+      }}
+      onError={(e) => {
+        console.error('Thumbnail image failed to load:', videoPath, e);
+      }}
     />
   );
 };
