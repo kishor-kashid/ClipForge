@@ -6,6 +6,7 @@ import TrimControls from './components/TrimControls';
 import ExportButton from './components/ExportButton';
 import Timeline from './components/Timeline';
 import RecordingPanel from './components/RecordingPanel';
+import PipRecorder from './components/PipRecorder';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
             {/* Right Panel - Controls */}
             <div className="w-full md:w-96 bg-[#1a1a1a] border-t md:border-t-0 md:border-l border-[#404040] p-4 space-y-4 overflow-y-auto">
               <RecordingPanel />
+              <PipRecorder />
               <TrimControls />
               <ExportButton />
             </div>

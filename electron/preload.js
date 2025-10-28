@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Export video with FFmpeg
   exportVideo: (params) => ipcRenderer.invoke('export:video', params),
   
+  // Export timeline with FFmpeg
+  exportTimeline: (params) => ipcRenderer.invoke('export:timeline', params),
+  
   // Listen for export progress updates
   onExportProgress: (callback) => {
     ipcRenderer.on('export:progress', (event, percent) => callback(percent));

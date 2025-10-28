@@ -3,7 +3,7 @@ import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
 
 export default function VideoPlayer() {
-  const { selectedVideo, videos, updateVideo } = useVideoStore();
+  const { selectedVideo, videos, updateVideo, splitClip, getTrimPoints } = useVideoStore();
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -26,6 +26,9 @@ export default function VideoPlayer() {
       if (selectedVideoObject.file) {
         videoSrc = URL.createObjectURL(selectedVideoObject.file);
         needsCleanup = true;
+      } else if (selectedVideoObject.originalPath) {
+        // For split clips, use the original file path
+        videoSrc = selectedVideoObject.originalPath;
       } else if (selectedVideoObject.path) {
         videoSrc = selectedVideoObject.path;
       }
@@ -54,16 +57,46 @@ export default function VideoPlayer() {
   };
 
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
+    if (videoRef.current && selectedVideoObject) {
+      const trim = getTrimPoints(selectedVideoObject.path);
+      const effectiveStart = trim.inPoint || 0;
+      const effectiveEnd = trim.outPoint || videoRef.current.duration;
+      
+      const absoluteTime = videoRef.current.currentTime;
+      const relativeTime = absoluteTime - effectiveStart;
+      
+      // Update display time relative to clip start
+      setCurrentTime(Math.max(0, relativeTime));
+      
+      // Stop playback if we've reached the out-point
+      if (absoluteTime >= effectiveEnd) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+        // Reset to start of clip
+        videoRef.current.currentTime = effectiveStart;
+        setCurrentTime(0);
+      }
     }
   };
 
   const handleLoadedMetadata = () => {
-    if (videoRef.current) {
+    if (videoRef.current && selectedVideoObject) {
       const videoDuration = videoRef.current.duration;
-      setDuration(videoDuration || 0);
+      const trim = getTrimPoints(selectedVideoObject.path);
+      
+      // For split clips or trimmed clips, set the effective duration
+      const effectiveStart = trim.inPoint || 0;
+      const effectiveEnd = trim.outPoint || videoDuration;
+      const effectiveDuration = effectiveEnd - effectiveStart;
+      
+      setDuration(effectiveDuration || 0);
       setIsLoading(false);
+      
+      // Seek to the in-point for split clips
+      if (effectiveStart > 0) {
+        videoRef.current.currentTime = effectiveStart;
+        setCurrentTime(0); // Display time relative to the clip start
+      }
       
       if (selectedVideoObject && selectedVideoObject.path && (!selectedVideoObject.duration || selectedVideoObject.duration === 0)) {
         updateVideo(selectedVideoObject.path, { duration: videoDuration || 0 });
@@ -78,17 +111,47 @@ export default function VideoPlayer() {
 
   const handleEnded = () => {
     setIsPlaying(false);
-    if (videoRef.current) {
+    if (videoRef.current && selectedVideoObject) {
+      const trim = getTrimPoints(selectedVideoObject.path);
+      const effectiveStart = trim.inPoint || 0;
+      
       setCurrentTime(0);
-      videoRef.current.currentTime = 0;
+      videoRef.current.currentTime = effectiveStart;
     }
   };
 
   const handleSeek = (e) => {
-    const newTime = parseFloat(e.target.value);
-    setCurrentTime(newTime);
-    if (videoRef.current) {
-      videoRef.current.currentTime = newTime;
+    const relativeTime = parseFloat(e.target.value);
+    setCurrentTime(relativeTime);
+    
+    if (videoRef.current && selectedVideoObject) {
+      const trim = getTrimPoints(selectedVideoObject.path);
+      const effectiveStart = trim.inPoint || 0;
+      
+      // Convert relative time to absolute time in the video
+      const absoluteTime = effectiveStart + relativeTime;
+      videoRef.current.currentTime = absoluteTime;
+    }
+  };
+
+  const handleSplit = () => {
+    if (!selectedVideoObject || !videoRef.current) return;
+    
+    // currentTime is now relative to clip start, convert to absolute time
+    const trim = getTrimPoints(selectedVideoObject.path);
+    const effectiveStart = trim.inPoint || 0;
+    const absoluteSplitTime = effectiveStart + currentTime;
+    
+    if (currentTime <= 0 || currentTime >= duration) {
+      alert(`Please position the playhead between start and end of the clip`);
+      return;
+    }
+    
+    const result = splitClip(selectedVideoObject.path, absoluteSplitTime);
+    if (result) {
+      alert(`Video split into 2 clips at ${formatTime(currentTime)}!\nPart 1: ${formatTime(currentTime)}\nPart 2: ${formatTime(duration - currentTime)}`);
+    } else {
+      alert('Failed to split video');
     }
   };
 
@@ -212,6 +275,18 @@ export default function VideoPlayer() {
                 <span>Play</span>
               </>
             )}
+          </button>
+          
+          <button
+            onClick={handleSplit}
+            disabled={!!error || currentTime <= 0 || currentTime >= duration}
+            className="flex items-center gap-2 px-4 py-2 bg-[#404040] text-white rounded hover:bg-[#505050] transition-all disabled:bg-[#2d2d2d] disabled:text-[#666] disabled:cursor-not-allowed"
+            title="Split clip at current playhead position"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 011.414 1.414L6.414 15H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 011.414-1.414L15 13.586V12a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            <span>Split</span>
           </button>
         </div>
       </div>

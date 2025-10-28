@@ -60,7 +60,99 @@ function exportVideo(params, onProgress) {
   });
 }
 
+/**
+ * Export timeline with multiple tracks
+ * @param {Object} params - Export parameters
+ * @param {Array} params.tracks - Array of tracks with clips
+ * @param {string} params.outputPath - Path to output video file
+ * @param {Object} params.videos - Object mapping video paths to video objects
+ * @param {Function} onProgress - Progress callback (percent)
+ * @returns {Promise<string>} - Path to exported file
+ */
+function exportTimeline(params, onProgress) {
+  return new Promise((resolve, reject) => {
+    const { tracks, outputPath, videos } = params;
+
+    try {
+      // Collect all clips from all tracks sorted by start time
+      const allClips = [];
+      tracks.forEach((track) => {
+        track.clips.forEach((clip) => {
+          const video = videos[clip.videoPath];
+          if (video) {
+            allClips.push({
+              ...clip,
+              video,
+              trackId: track.id,
+            });
+          }
+        });
+      });
+
+      // Sort clips by start time
+      allClips.sort((a, b) => a.startTime - b.startTime);
+
+      if (allClips.length === 0) {
+        return reject(new Error('No clips to export'));
+      }
+
+      // For now, concatenate clips sequentially
+      // TODO: Implement proper track overlaying/compositing for overlapping clips
+      let command = ffmpeg();
+
+      // Add all input files
+      allClips.forEach((clip) => {
+        const inputPath = clip.video.originalPath || clip.video.path;
+        command = command.input(inputPath);
+        
+        // Apply trim points if specified
+        if (clip.inPoint && clip.inPoint > 0) {
+          command = command.inputOptions([`-ss ${clip.inPoint}`]);
+        }
+        if (clip.outPoint) {
+          const duration = clip.outPoint - (clip.inPoint || 0);
+          command = command.inputOptions([`-t ${duration}`]);
+        } else if (clip.duration) {
+          command = command.inputOptions([`-t ${clip.duration}`]);
+        }
+      });
+
+      // Create filter complex for concatenation
+      const filterInputs = allClips.map((_, i) => `[${i}:v][${i}:a]`).join('');
+      const concatFilter = `${filterInputs}concat=n=${allClips.length}:v=1:a=1[outv][outa]`;
+
+      command
+        .complexFilter(concatFilter)
+        .outputOptions(['-map [outv]', '-map [outa]'])
+        .videoCodec('libx264')
+        .audioCodec('aac')
+        .outputOptions(['-preset fast', '-crf 23'])
+        .output(outputPath)
+        .on('start', (commandLine) => {
+          console.log('FFmpeg timeline export command: ' + commandLine);
+        })
+        .on('progress', (progress) => {
+          if (onProgress && progress.percent) {
+            onProgress(progress.percent);
+          }
+        })
+        .on('end', () => {
+          console.log('Timeline export completed successfully');
+          resolve(outputPath);
+        })
+        .on('error', (err) => {
+          console.error('FFmpeg timeline export error:', err.message);
+          reject(new Error(`Timeline export failed: ${err.message}`));
+        })
+        .run();
+    } catch (error) {
+      reject(new Error(`FFmpeg timeline export setup failed: ${error.message}`));
+    }
+  });
+}
+
 module.exports = {
   exportVideo,
+  exportTimeline,
 };
 

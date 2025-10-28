@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, desktopCapturer } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { exportVideo } = require('./ffmpeg');
+const { exportVideo, exportTimeline } = require('./ffmpeg');
 
 // Better dev detection - check if app is packaged
 const isDev = !app.isPackaged;
@@ -109,6 +109,33 @@ ipcMain.handle('export:video', async (event, params) => {
 });
 
 /**
+ * Handle timeline export with FFmpeg
+ */
+ipcMain.handle('export:timeline', async (event, params) => {
+  try {
+    const { tracks, outputPath, videos } = params;
+
+    // Validate parameters
+    if (!tracks || !outputPath || !videos) {
+      throw new Error('Tracks, output path, and videos are required');
+    }
+
+    // Export timeline with progress updates
+    const exportedPath = await exportTimeline(
+      { tracks, outputPath, videos },
+      (percent) => {
+        // Send progress updates to renderer
+        mainWindow.webContents.send('export:progress', percent);
+      }
+    );
+
+    return { success: true, path: exportedPath };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+/**
  * Handle getting screen sources for recording
  */
 ipcMain.handle('recording:getScreenSources', async () => {
@@ -121,6 +148,7 @@ ipcMain.handle('recording:getScreenSources', async () => {
     return sources.map(source => ({
       id: source.id,
       name: source.name,
+      type: source.id.startsWith('screen:') ? 'screen' : 'window',
       thumbnail: source.thumbnail.toDataURL()
     }));
   } catch (error) {
