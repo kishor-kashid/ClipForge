@@ -5,9 +5,28 @@ import { formatTime } from '../utils/timeUtils';
 function RecordingPanel() {
   const { isRecording, recordingDuration, startRecording, stopRecording, addVideo } = useVideoStore();
   const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [recordedChunks, setRecordedChunks] = useState([]);
   const [previewStream, setPreviewStream] = useState(null);
+  const [recordingMode, setRecordingMode] = useState('screen'); // 'screen' or 'webcam'
+  const [availableCameras, setAvailableCameras] = useState([]);
+  const [selectedCamera, setSelectedCamera] = useState(null);
   const videoRef = useRef(null);
+
+  // Get available cameras on mount
+  useEffect(() => {
+    const getCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter(device => device.kind === 'videoinput');
+        setAvailableCameras(cameras);
+        if (cameras.length > 0) {
+          setSelectedCamera(cameras[0].deviceId);
+        }
+      } catch (error) {
+        console.error('Error enumerating devices:', error);
+      }
+    };
+    getCameras();
+  }, []);
 
   // Handle cleanup when component unmounts or recording stops
   useEffect(() => {
@@ -22,22 +41,21 @@ function RecordingPanel() {
     };
   }, [isRecording, previewStream]);
 
-  const handleStartRecording = async () => {
-    try {
+  const getStreamForRecording = async () => {
+    if (recordingMode === 'screen') {
       // Get screen sources using Electron API
       const sources = await window.electronAPI.getScreenSources();
       
       if (!sources || sources.length === 0) {
-        alert('No screen sources available');
-        return;
+        throw new Error('No screen sources available');
       }
 
       // Select the first available source (usually main screen)
       const source = sources[0];
 
       // Request screen capture stream
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false, // Screen capture doesn't include audio by default
+      return await navigator.mediaDevices.getUserMedia({
+        audio: false,
         video: {
           mandatory: {
             chromeMediaSource: 'desktop',
@@ -45,6 +63,28 @@ function RecordingPanel() {
           },
         },
       });
+    } else {
+      // Request webcam stream
+      try {
+        return await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: selectedCamera ? { deviceId: { exact: selectedCamera } } : true,
+        });
+      } catch (error) {
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          throw new Error('Camera permission denied. Please allow camera access.');
+        }
+        if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+          throw new Error('No camera found. Please connect a camera.');
+        }
+        throw error;
+      }
+    }
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      const stream = await getStreamForRecording();
 
       setPreviewStream(stream);
 
@@ -78,7 +118,6 @@ function RecordingPanel() {
 
       recorder.onstop = async () => {
         const blob = new Blob(chunks, { type: 'video/webm' });
-        setRecordedChunks([]);
 
         // Convert blob to Uint8Array and save via Electron
         const arrayBuffer = await blob.arrayBuffer();
@@ -89,7 +128,7 @@ function RecordingPanel() {
           // Add recording to video store
           addVideo({
             path: result.path,
-            name: `Recording ${new Date().toLocaleTimeString()}`,
+            name: `${recordingMode === 'screen' ? 'Screen' : 'Webcam'} Recording ${new Date().toLocaleTimeString()}`,
             duration: recordingDuration,
           });
 
@@ -132,8 +171,53 @@ function RecordingPanel() {
         <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
           <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 9a1 1 0 012 0v2a1 1 0 01-2 0V9z" />
         </svg>
-        Screen Recording
+        Recording
       </h3>
+
+      {/* Mode Toggle */}
+      <div className="mb-3 flex gap-2">
+        <button
+          onClick={() => setRecordingMode('screen')}
+          className={`flex-1 px-3 py-2 rounded transition-colors ${
+            recordingMode === 'screen'
+              ? 'bg-[#4a9eff] text-white'
+              : 'bg-[#404040] text-[#b3b3b3] hover:bg-[#505050]'
+          }`}
+          disabled={isRecording}
+        >
+          Screen
+        </button>
+        <button
+          onClick={() => setRecordingMode('webcam')}
+          className={`flex-1 px-3 py-2 rounded transition-colors ${
+            recordingMode === 'webcam'
+              ? 'bg-[#4a9eff] text-white'
+              : 'bg-[#404040] text-[#b3b3b3] hover:bg-[#505050]'
+          }`}
+          disabled={isRecording}
+        >
+          Webcam
+        </button>
+      </div>
+
+      {/* Camera Selector (only shown in webcam mode) */}
+      {recordingMode === 'webcam' && availableCameras.length > 1 && (
+        <div className="mb-3">
+          <label className="block text-sm text-[#b3b3b3] mb-1">Camera:</label>
+          <select
+            value={selectedCamera || ''}
+            onChange={(e) => setSelectedCamera(e.target.value)}
+            className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded"
+            disabled={isRecording}
+          >
+            {availableCameras.map((camera) => (
+              <option key={camera.deviceId} value={camera.deviceId}>
+                {camera.label || `Camera ${availableCameras.indexOf(camera) + 1}`}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Preview */}
       <div className="mb-3">
