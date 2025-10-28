@@ -110,7 +110,7 @@ describe('VideoImport - Integration Tests', () => {
     it('should handle file selection via input', () => {
       render(<VideoImport />, { wrapper: TestWrapper });
       
-      const input = screen.getByLabelText(/select files/i);
+      const input = document.getElementById('file-input-fallback');
       const file = new File([''], 'test.mp4', { type: 'video/mp4' });
       
       fireEvent.change(input, {
@@ -123,7 +123,7 @@ describe('VideoImport - Integration Tests', () => {
     it('should accept multiple files', () => {
       render(<VideoImport />, { wrapper: TestWrapper });
       
-      const input = screen.getByLabelText(/select files/i);
+      const input = document.getElementById('file-input-fallback');
       const files = [
         new File([''], 'test1.mp4', { type: 'video/mp4' }),
         new File([''], 'test2.mov', { type: 'video/quicktime' }),

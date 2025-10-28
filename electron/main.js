@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const { exportVideo } = require('./ffmpeg');
 
 // Better dev detection - check if app is packaged
 const isDev = !app.isPackaged;
@@ -14,6 +15,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      webSecurity: false, // Allow loading local files
     },
   });
 
@@ -41,6 +43,67 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
+  }
+});
+
+// IPC Handlers
+
+/**
+ * Handle file dialog for selecting video files
+ */
+ipcMain.handle('dialog:openFile', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections'],
+    filters: [
+      { name: 'Videos', extensions: ['mp4', 'mov', 'webm'] },
+      { name: 'All Files', extensions: ['*'] }
+    ],
+    title: 'Select Video Files'
+  });
+
+  return result;
+});
+
+/**
+ * Handle save dialog for exporting video
+ */
+ipcMain.handle('dialog:saveFile', async () => {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    filters: [
+      { name: 'Videos', extensions: ['mp4'] },
+      { name: 'All Files', extensions: ['*'] }
+    ],
+    title: 'Save Video As',
+    defaultPath: `clipforge-${Date.now()}.mp4`
+  });
+
+  return result;
+});
+
+/**
+ * Handle video export with FFmpeg
+ */
+ipcMain.handle('export:video', async (event, params) => {
+  try {
+    const { inputPath, outputPath, startTime, duration } = params;
+
+    // Validate parameters
+    if (!inputPath || !outputPath) {
+      throw new Error('Input and output paths are required');
+    }
+
+    // Export video with progress updates
+    const exportedPath = await exportVideo(
+      { inputPath, outputPath, startTime, duration },
+      (percent) => {
+        // Send progress updates to renderer
+        mainWindow.webContents.send('export:progress', percent);
+      }
+    );
+
+    return { success: true, path: exportedPath };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 });
 

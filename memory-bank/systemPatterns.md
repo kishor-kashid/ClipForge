@@ -21,11 +21,12 @@ App
 ```
 
 #### State Management
-- **Store**: React Context API (oresimple, built-in)
+- **Store**: React Context API (simple, built-in)
 - **Store Structure**:
   - `videos`: Array of imported video metadata
-  - `selectedVideo`: Current video being edited
+  - `selectedVideo`: Current video being edited  
   - `trimPoints`: In/out points per video
+  - Methods: addVideo, removeVideo, updateVideo, selectVideo, setInPoint, setOutPoint, getTrimPoints
 
 #### Utility Layer
 - **fileUtils.js**: File validation, path handling
@@ -146,7 +147,7 @@ TrimControls displays new inPoint time
 ```
 User clicks Export → ExportButton
 ↓
-Gather data: selectedVideo + trimPoints + output path
+Validate trim points (out > in, within duration)
 ↓
 IPC → main process → showSaveDialog
 ↓
@@ -154,7 +155,7 @@ User selects save location → IPC response
 ↓
 IPC → ffmpeg.js → start FFmpeg process with trim params
 ↓
-FFmpeg emits progress events → IPC updates → progress bar
+FFmpeg emits progress events → IPC updates → progress bar (with fallback timer)
 ↓
 Export complete → IPC success → UI confirmation
 ```
@@ -264,7 +265,9 @@ Windows executable + installer
 |----------|-----------|------------|
 | React Context vs Zustand | Simpler, fewer dependencies | Less powerful, adequate for MVP |
 | HTML5 video vs custom player | Faster implementation | Less control over playback |
-| ffmpeg-static vs system FFmpeg | Zero user setup friction | Larger bundle size (~50MB) |
+| ffmpeg-static vs system FFmpeg | Zero user setup friction | Larger bundle size (~150MB) |
 | DOM timeline vs Canvas | Faster MVP development | Less scalable for large projects |
 | Electron vs native | Cross-platform, web skills | Larger size, slower startup |
+| webSecurity: false | Required for local file access in Electron | Less secure, but needed for MVP |
+| Fallback progress timer | FFmpeg progress events unreliable | Progress bar shows forward movement |
 
