@@ -9,39 +9,60 @@ function RecordingPanel() {
   const [recordingMode, setRecordingMode] = useState('screen'); // 'screen' or 'webcam'
   const [availableCameras, setAvailableCameras] = useState([]);
   const [selectedCamera, setSelectedCamera] = useState(null);
+  const [availableMicrophones, setAvailableMicrophones] = useState([]);
+  const [selectedMicrophone, setSelectedMicrophone] = useState(null);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioStream, setAudioStream] = useState(null);
   const videoRef = useRef(null);
 
-  // Get available cameras on mount
+  // Get available cameras and microphones on mount
   useEffect(() => {
-    const getCameras = async () => {
+    const getDevices = async () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const cameras = devices.filter(device => device.kind === 'videoinput');
+        const microphones = devices.filter(device => device.kind === 'audioinput');
         setAvailableCameras(cameras);
+        setAvailableMicrophones(microphones);
         if (cameras.length > 0) {
           setSelectedCamera(cameras[0].deviceId);
+        }
+        if (microphones.length > 0) {
+          setSelectedMicrophone(microphones[0].deviceId);
         }
       } catch (error) {
         console.error('Error enumerating devices:', error);
       }
     };
-    getCameras();
+    getDevices();
   }, []);
 
   // Handle cleanup when component unmounts or recording stops
   useEffect(() => {
-    if (!isRecording && previewStream) {
-      previewStream.getTracks().forEach(track => track.stop());
-      setPreviewStream(null);
+    if (!isRecording) {
+      if (previewStream) {
+        previewStream.getTracks().forEach(track => track.stop());
+        setPreviewStream(null);
+      }
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+        setAudioStream(null);
+      }
     }
     return () => {
       if (previewStream) {
         previewStream.getTracks().forEach(track => track.stop());
       }
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+      }
     };
-  }, [isRecording, previewStream]);
+  }, [isRecording, previewStream, audioStream]);
 
   const getStreamForRecording = async () => {
+    let videoStream = null;
+    let micStream = null;
+
     if (recordingMode === 'screen') {
       // Get screen sources using Electron API
       const sources = await window.electronAPI.getScreenSources();
@@ -54,7 +75,7 @@ function RecordingPanel() {
       const source = sources[0];
 
       // Request screen capture stream
-      return await navigator.mediaDevices.getUserMedia({
+      videoStream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
           mandatory: {
@@ -66,7 +87,7 @@ function RecordingPanel() {
     } else {
       // Request webcam stream
       try {
-        return await navigator.mediaDevices.getUserMedia({
+        videoStream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: selectedCamera ? { deviceId: { exact: selectedCamera } } : true,
         });
@@ -80,6 +101,36 @@ function RecordingPanel() {
         throw error;
       }
     }
+
+    // Add audio if enabled
+    if (audioEnabled) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: selectedMicrophone ? { deviceId: { exact: selectedMicrophone } } : true,
+          video: false,
+        });
+        setAudioStream(micStream);
+      } catch (error) {
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          throw new Error('Microphone permission denied. Please allow microphone access.');
+        }
+        if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+          throw new Error('No microphone found. Please connect a microphone.');
+        }
+        throw error;
+      }
+    }
+
+    // Combine audio and video streams
+    if (micStream) {
+      videoStream.getTracks().concat(micStream.getTracks()).forEach(track => {
+        if (!videoStream.getTracks().includes(track)) {
+          videoStream.addTrack(track);
+        }
+      });
+    }
+
+    return videoStream;
   };
 
   const handleStartRecording = async () => {
@@ -93,7 +144,7 @@ function RecordingPanel() {
         videoRef.current.srcObject = stream;
       }
 
-      // Create MediaRecorder
+      // Create MediaRecorder with audio support
       const options = {
         mimeType: 'video/webm;codecs=vp9',
         videoBitsPerSecond: 2500000,
@@ -159,6 +210,11 @@ function RecordingPanel() {
         setPreviewStream(null);
       }
 
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+        setAudioStream(null);
+      }
+
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
@@ -218,6 +274,39 @@ function RecordingPanel() {
           </select>
         </div>
       )}
+
+      {/* Audio Controls */}
+      <div className="mb-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-sm text-[#b3b3b3]">Audio:</label>
+          <button
+            onClick={() => setAudioEnabled(!audioEnabled)}
+            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+              audioEnabled
+                ? 'bg-[#4a9eff] text-white hover:bg-[#3a8eef]'
+                : 'bg-[#404040] text-[#b3b3b3] hover:bg-[#505050]'
+            }`}
+            disabled={isRecording}
+          >
+            {audioEnabled ? 'Enabled' : 'Disabled'}
+          </button>
+        </div>
+
+        {audioEnabled && availableMicrophones.length > 1 && (
+          <select
+            value={selectedMicrophone || ''}
+            onChange={(e) => setSelectedMicrophone(e.target.value)}
+            className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+            disabled={isRecording}
+          >
+            {availableMicrophones.map((mic) => (
+              <option key={mic.deviceId} value={mic.deviceId}>
+                {mic.label || `Microphone ${availableMicrophones.indexOf(mic) + 1}`}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {/* Preview */}
       <div className="mb-3">
