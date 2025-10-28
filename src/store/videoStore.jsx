@@ -29,6 +29,16 @@ export function VideoProvider({ children }) {
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [snapInterval, setSnapInterval] = useState(1); // Snap to 1 second intervals
   
+  // Video player state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [selectedClip, setSelectedClip] = useState(null);
+  
+  // Undo/Redo state
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isUndoRedoAction, setIsUndoRedoAction] = useState(false);
+  
   // Keep ref in sync with state
   React.useEffect(() => {
     selectedVideoRef.current = selectedVideo;
@@ -83,6 +93,9 @@ export function VideoProvider({ children }) {
       }
       return currentSelected;
     });
+    
+    // Save to history
+    saveToHistory('addVideo', `Added video: ${video.name}`);
   };
 
   /**
@@ -107,6 +120,10 @@ export function VideoProvider({ children }) {
       
       return remaining;
     });
+    
+    // Save to history
+    const video = videos.find(v => v.path === videoPath);
+    saveToHistory('removeVideo', `Removed video: ${video?.name || videoPath}`);
   };
 
   /**
@@ -212,6 +229,10 @@ export function VideoProvider({ children }) {
         return track;
       })
     );
+    
+    // Save to history
+    const video = videos.find(v => v.path === clip.videoPath);
+    saveToHistory('addClipToTrack', `Added clip to track: ${video?.name || clip.videoPath}`);
   };
 
   /**
@@ -228,6 +249,12 @@ export function VideoProvider({ children }) {
         return track;
       })
     );
+    
+    // Save to history
+    const track = tracks.find(t => t.id === trackId);
+    const clip = track?.clips.find(c => c.id === clipId);
+    const video = videos.find(v => v.path === clip?.videoPath);
+    saveToHistory('removeClipFromTrack', `Removed clip from track: ${video?.name || clipId}`);
   };
 
   /**
@@ -288,6 +315,10 @@ export function VideoProvider({ children }) {
     }));
 
     // Remove original from timeline (keep in library)
+    
+    // Save to history
+    saveToHistory('splitClip', `Split video: ${video.name} at ${splitTime}s`);
+    
     return { clip1, clip2, splitTime };
   };
 
@@ -429,6 +460,127 @@ export function VideoProvider({ children }) {
     return nearestEdge;
   };
 
+  /**
+   * Play video
+   */
+  const playVideo = () => {
+    setIsPlaying(true);
+  };
+
+  /**
+   * Pause video
+   */
+  const pauseVideo = () => {
+    setIsPlaying(false);
+  };
+
+  /**
+   * Set current time
+   * @param {number} time - Time in seconds
+   */
+  const updateCurrentTime = (time) => {
+    setCurrentTime(time);
+  };
+
+  /**
+   * Export video (placeholder)
+   */
+  const exportVideo = () => {
+    console.log('Export video triggered');
+    // This will be implemented in the ExportButton component
+  };
+
+  /**
+   * Save current state to history
+   */
+  const saveToHistory = (action, description) => {
+    if (isUndoRedoAction) return; // Don't save undo/redo actions to history
+    
+    const stateSnapshot = {
+      videos: [...videos],
+      tracks: tracks.map(track => ({
+        ...track,
+        clips: [...track.clips]
+      })),
+      trimPoints: { ...trimPoints },
+      selectedVideo,
+      selectedClip,
+      action,
+      description,
+      timestamp: Date.now()
+    };
+
+    setHistory(prevHistory => {
+      const newHistory = prevHistory.slice(0, historyIndex + 1);
+      newHistory.push(stateSnapshot);
+      
+      // Limit history to 50 actions
+      if (newHistory.length > 50) {
+        newHistory.shift();
+        return newHistory;
+      }
+      
+      return newHistory;
+    });
+    
+    setHistoryIndex(prevIndex => {
+      const newIndex = Math.min(prevIndex + 1, 49);
+      return newIndex;
+    });
+  };
+
+  /**
+   * Undo last action
+   */
+  const undo = () => {
+    if (historyIndex > 0) {
+      setIsUndoRedoAction(true);
+      const previousState = history[historyIndex - 1];
+      
+      setVideos(previousState.videos);
+      setTracks(previousState.tracks);
+      setTrimPoints(previousState.trimPoints);
+      setSelectedVideo(previousState.selectedVideo);
+      setSelectedClip(previousState.selectedClip);
+      setHistoryIndex(prevIndex => prevIndex - 1);
+      
+      setTimeout(() => setIsUndoRedoAction(false), 100);
+      return true;
+    }
+    return false;
+  };
+
+  /**
+   * Redo last undone action
+   */
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      setIsUndoRedoAction(true);
+      const nextState = history[historyIndex + 1];
+      
+      setVideos(nextState.videos);
+      setTracks(nextState.tracks);
+      setTrimPoints(nextState.trimPoints);
+      setSelectedVideo(nextState.selectedVideo);
+      setSelectedClip(nextState.selectedClip);
+      setHistoryIndex(prevIndex => prevIndex + 1);
+      
+      setTimeout(() => setIsUndoRedoAction(false), 100);
+      return true;
+    }
+    return false;
+  };
+
+  /**
+   * Check if undo is available
+   */
+  const canUndo = () => historyIndex > 0;
+
+  /**
+   * Check if redo is available
+   */
+  const canRedo = () => historyIndex < history.length - 1;
+
   const value = {
     videos,
     selectedVideo,
@@ -467,6 +619,21 @@ export function VideoProvider({ children }) {
     toggleSnap,
     snapToGrid,
     snapToEdge,
+    // Video player state
+    isPlaying,
+    currentTime,
+    selectedClip,
+    playVideo,
+    pauseVideo,
+    updateCurrentTime,
+    setSelectedClip,
+    exportVideo,
+    // Undo/Redo
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    saveToHistory,
   };
 
   return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;

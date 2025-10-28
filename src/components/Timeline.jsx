@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
+import { VideoThumbnail } from '../utils/thumbnailUtils.jsx';
 
 export default function Timeline() {
   const { 
@@ -25,6 +26,9 @@ export default function Timeline() {
     toggleSnap,
     snapToGrid,
     snapToEdge,
+    // Clip selection
+    selectedClip,
+    setSelectedClip,
   } = useVideoStore();
 
   const [draggedClip, setDraggedClip] = useState(null);
@@ -128,6 +132,7 @@ export default function Timeline() {
     setDropIndicatorPosition(null);
     setDropIndicatorTrack(null);
   };
+
 
   const getTotalDuration = () => {
     let maxEnd = 0;
@@ -347,6 +352,7 @@ export default function Timeline() {
               onDragOver={(e) => handleDragOver(e, track.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDropOnTrack(e, track.id)}
+              onClick={() => setSelectedClip(null)}
             >
               {/* Scrollable content wrapper */}
               <div
@@ -419,13 +425,23 @@ export default function Timeline() {
                     });
                   }
                   
-    return (
+                  return (
                     <div
                       key={clip.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, clip, false, track.id)}
-                      onClick={() => video && selectVideo(video.path)}
-                      className={`absolute top-6 hover:bg-[#5aaaff] border-2 rounded cursor-move transition-colors ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (video) {
+                          selectVideo(video.path);
+                          setSelectedClip(clip);
+                        }
+                      }}
+                      className={`absolute top-6 hover:bg-[#5aaaff] border-2 rounded cursor-move transition-colors flex items-center ${
+                        selectedClip?.id === clip.id 
+                          ? 'ring-2 ring-yellow-400 ring-opacity-75' 
+                          : ''
+                      } ${
                         isSplit 
                           ? 'bg-[#9d4edd] border-[#7b2cbf]' 
                           : 'bg-[#4a9eff] border-[#3080df]'
@@ -441,7 +457,20 @@ export default function Timeline() {
                           SPLIT
                         </div>
                       )}
-                      <div className="px-2 py-1 h-full flex flex-col justify-center overflow-hidden">
+                      
+                      {/* Thumbnail */}
+                      <div className="flex-shrink-0 ml-1">
+                        <VideoThumbnail 
+                          videoPath={video?.path} 
+                          timeOffset={0}
+                          width={32}
+                          height={20}
+                          className="rounded"
+                        />
+                      </div>
+                      
+                      {/* Clip info */}
+                      <div className="px-2 py-1 flex-1 flex flex-col justify-center overflow-hidden min-w-0">
                         <div className="text-xs text-white font-semibold truncate">
                           {video?.name || 'Unknown'}
                         </div>

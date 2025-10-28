@@ -12,12 +12,15 @@ ffmpeg.setFfmpegPath(ffmpegPath);
  * @param {string} params.outputPath - Path to output video file
  * @param {number} params.startTime - Start time in seconds (in-point)
  * @param {number} params.duration - Duration in seconds (out-point - in-point)
+ * @param {string} params.resolution - Resolution preset (source, 720p, 1080p, 4k)
+ * @param {string} params.quality - Quality preset (fast, medium, high)
+ * @param {string} params.format - Format preset (mp4-h264, mp4-h265, webm)
  * @param {Function} onProgress - Progress callback (percent)
  * @returns {Promise<string>} - Path to exported file
  */
 function exportVideo(params, onProgress) {
   return new Promise((resolve, reject) => {
-    const { inputPath, outputPath, startTime, duration } = params;
+    const { inputPath, outputPath, startTime, duration, resolution, quality, format } = params;
 
     try {
       let command = ffmpeg(inputPath);
@@ -31,12 +34,59 @@ function exportVideo(params, onProgress) {
         command = command.setDuration(duration);
       }
 
+      // Set resolution
+      if (resolution && resolution !== 'source') {
+        const resolutionMap = {
+          '720p': '1280x720',
+          '1080p': '1920x1080',
+          '4k': '3840x2160'
+        };
+        const scale = resolutionMap[resolution];
+        if (scale) {
+          command = command.size(scale);
+        }
+      }
+
+      // Set quality presets
+      const qualityPresets = {
+        fast: { preset: 'fast', crf: 28 },
+        medium: { preset: 'medium', crf: 23 },
+        high: { preset: 'slow', crf: 18 }
+      };
+
+      const qualitySettings = qualityPresets[quality] || qualityPresets.medium;
+
+      // Set codec and format based on format preset
+      let videoCodec, audioCodec, outputOptions;
+      
+      switch (format) {
+        case 'mp4-h264':
+          videoCodec = 'libx264';
+          audioCodec = 'aac';
+          outputOptions = [`-preset ${qualitySettings.preset}`, `-crf ${qualitySettings.crf}`];
+          break;
+        case 'mp4-h265':
+          videoCodec = 'libx265';
+          audioCodec = 'aac';
+          outputOptions = [`-preset ${qualitySettings.preset}`, `-crf ${qualitySettings.crf}`];
+          break;
+        case 'webm':
+          videoCodec = 'libvpx-vp9';
+          audioCodec = 'libopus';
+          outputOptions = [`-crf ${qualitySettings.crf}`, '-b:v 0'];
+          break;
+        default:
+          videoCodec = 'libx264';
+          audioCodec = 'aac';
+          outputOptions = [`-preset ${qualitySettings.preset}`, `-crf ${qualitySettings.crf}`];
+      }
+
       // Set output format and codec
       command
         .output(outputPath)
-        .videoCodec('libx264') // H.264 codec
-        .audioCodec('aac')
-        .outputOptions(['-preset fast', '-crf 23']) // Good quality balance
+        .videoCodec(videoCodec)
+        .audioCodec(audioCodec)
+        .outputOptions(outputOptions)
         .on('start', (commandLine) => {
           console.log('FFmpeg command: ' + commandLine);
         })

@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
+import { useToast } from './ToastProvider';
 
 export default function ExportButton() {
   const { selectedVideo, getSelectedVideoObject, getTrimPoints } = useVideoStore();
+  const { addToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('idle'); // idle, exporting, success, error
   const [errorMessage, setErrorMessage] = useState(null);
+  
+  // Export settings
+  const [resolution, setResolution] = useState('source');
+  const [quality, setQuality] = useState('medium');
+  const [format, setFormat] = useState('mp4-h264');
 
   // Get the selected video object
   const selectedVideoObject = getSelectedVideoObject();
@@ -36,6 +43,28 @@ export default function ExportButton() {
       }
     };
   }, []);
+
+  // Calculate estimated file size
+  const getEstimatedFileSize = () => {
+    if (!selectedVideoObject) return 'Unknown';
+    
+    const duration = outPoint !== null ? outPoint - inPoint : selectedVideoObject.duration;
+    if (!duration) return 'Unknown';
+    
+    // Base bitrate estimates (Mbps)
+    const qualityBitrates = {
+      fast: { '720p': 2, '1080p': 4, '4k': 8, 'source': 4 },
+      medium: { '720p': 4, '1080p': 8, '4k': 16, 'source': 8 },
+      high: { '720p': 8, '1080p': 16, '4k': 32, 'source': 16 }
+    };
+    
+    const bitrate = qualityBitrates[quality]?.[resolution] || 8;
+    const sizeInMB = (bitrate * duration) / 8; // Convert Mbps to MB
+    
+    if (sizeInMB < 1) return `${Math.round(sizeInMB * 1024)} KB`;
+    if (sizeInMB < 1024) return `${Math.round(sizeInMB)} MB`;
+    return `${Math.round(sizeInMB / 1024)} GB`;
+  };
 
   const handleExport = async () => {
     if (!selectedVideoObject) {
@@ -104,11 +133,15 @@ export default function ExportButton() {
         outputPath: outputPath,
         startTime: inPoint || 0,
         duration: duration,
+        resolution: resolution,
+        quality: quality,
+        format: format,
       });
 
       if (exportResult.success) {
         setStatus('success');
         setProgress(100);
+        addToast('Video exported successfully!', 'success');
         // Reset after 3 seconds
         setTimeout(() => {
           setStatus('idle');
@@ -117,10 +150,12 @@ export default function ExportButton() {
       } else {
         setErrorMessage(exportResult.error || 'Export failed');
         setStatus('error');
+        addToast('Export failed: ' + (exportResult.error || 'Unknown error'), 'error');
       }
     } catch (error) {
       setErrorMessage(error.message || 'Export failed');
       setStatus('error');
+      addToast('Export failed: ' + (error.message || 'Unknown error'), 'error');
     } finally {
       setIsExporting(false);
     }
@@ -173,6 +208,59 @@ export default function ExportButton() {
         </div>
       )}
 
+      {/* Export Settings */}
+      {!isExporting && (
+        <div className="mb-4 space-y-3">
+          {/* Resolution */}
+          <div>
+            <label className="block text-sm text-[#b3b3b3] mb-1">Resolution:</label>
+            <select
+              value={resolution}
+              onChange={(e) => setResolution(e.target.value)}
+              className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+            >
+              <option value="source">Source (Original)</option>
+              <option value="720p">720p (1280x720)</option>
+              <option value="1080p">1080p (1920x1080)</option>
+              <option value="4k">4K (3840x2160)</option>
+            </select>
+          </div>
+
+          {/* Quality */}
+          <div>
+            <label className="block text-sm text-[#b3b3b3] mb-1">Quality:</label>
+            <select
+              value={quality}
+              onChange={(e) => setQuality(e.target.value)}
+              className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+            >
+              <option value="fast">Fast (Lower quality, smaller file)</option>
+              <option value="medium">Medium (Balanced)</option>
+              <option value="high">High (Best quality, larger file)</option>
+            </select>
+          </div>
+
+          {/* Format */}
+          <div>
+            <label className="block text-sm text-[#b3b3b3] mb-1">Format:</label>
+            <select
+              value={format}
+              onChange={(e) => setFormat(e.target.value)}
+              className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+            >
+              <option value="mp4-h264">MP4 (H.264)</option>
+              <option value="mp4-h265">MP4 (H.265)</option>
+              <option value="webm">WebM</option>
+            </select>
+          </div>
+
+          {/* File size estimate */}
+          <div className="text-xs text-[#b3b3b3] bg-[#1a1a1a] p-2 rounded">
+            <p>Estimated file size: {getEstimatedFileSize()}</p>
+          </div>
+        </div>
+      )}
+
       {/* Export Button */}
       <button
         onClick={handleExport}
@@ -192,7 +280,7 @@ export default function ExportButton() {
             Exporting...
           </span>
         ) : (
-          'Export to MP4'
+          `Export to ${format.toUpperCase()}`
         )}
       </button>
 
