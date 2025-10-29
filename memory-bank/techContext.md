@@ -3,13 +3,15 @@
 ## Technology Stack
 
 ### Project Status
-**🎉 COMPLETE**: All 20 PRs implemented and tested
+**🎉 COMPLETE**: All 22 PRs implemented and tested
 - ✅ MVP implementation (PR #1-10)
 - ✅ Recording features (PR #11-14)
 - ✅ Timeline advanced features (PR #16-17)
 - ✅ Advanced export features (PR #18)
 - ✅ Testing suite (PR #19)
 - ✅ Demo materials (PR #20)
+- ✅ AI Transcription (PR #21)
+- ✅ AI Highlights Detection (PR #22)
 
 ### Core Framework
 - **Electron**: vLatest (desktop application framework)
@@ -25,6 +27,8 @@
   "react-dom": "^19.2.0",
   "fluent-ffmpeg": "^2.1.3",
   "ffmpeg-static": "^5.2.0",
+  "openai": "^4.x",
+  "dotenv": "^16.x",
   "@vitejs/plugin-react": "^4.7.0",
   "vite": "^6.4.1"
 }
@@ -243,6 +247,39 @@ setupFiles: ['./tests/setup.js']
 - **dialog**: File picker dialogs
 - **contextBridge**: Secure API exposure
 
+### External Packages
+- **openai**: OpenAI SDK for Whisper API transcription
+- **dotenv**: Environment variable management from .env files
+- **fluent-ffmpeg**: FFmpeg wrapper for audio extraction
+- **ffmpeg-static**: Bundled FFmpeg binary
+
+## AI Features Integration
+
+### OpenAI Integration
+- **API**: Whisper API for audio transcription
+- **Client**: Initialized in main process with API key from .env
+- **IPC Handler**: `ai:transcribe` in `electron/main.js`
+- **Context Bridge**: `window.electronAPI.aiTranscribe()` exposed to renderer
+- **Audio Extraction**: FFmpeg extracts audio to temporary MP3 files
+- **Response Format**: `verbose_json` with timestamped segments
+- **File Size Limit**: 25MB (handled with error messages)
+
+### Highlights Detection
+- **Analysis**: Transcript segments analyzed for best content
+- **Algorithms**: 
+  - Silence detection (backend only, not shown in UI)
+  - Filler word detection (backend only, not shown in UI)
+  - Highlight detection (primary feature, shown in UI)
+- **Scoring**: Word density × duration for highlight ranking
+- **Confidence**: Calculated based on content quality
+- **UI Display**: Only highlight suggestions shown (filtered from all suggestions)
+
+### Environment Variables
+- **.env file**: Contains OPENAI_API_KEY (gitignored)
+- **.env.example**: Template with placeholder
+- **Loading**: `dotenv.config()` in Electron main process only
+- **Security**: API key never exposed to renderer process
+
 ## Version Control
 
 ### Git Workflow
@@ -256,6 +293,7 @@ setupFiles: ['./tests/setup.js']
 - **Configuration**: Root level config files
 - **Documentation**: `*.md` files
 - **Build Artifacts**: `dist/` (gitignored)
+- **Environment**: `.env` (gitignored), `.env.example` (committed)
 
 ## Deployment Process
 

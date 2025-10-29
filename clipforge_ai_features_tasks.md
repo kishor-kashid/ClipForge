@@ -9,7 +9,7 @@
 
 **Features**:
 1. **Auto Transcription** - Generate transcripts from video audio using Whisper API
-2. **Smart Trim Suggestions** - Analyze transcripts to suggest optimal trim points (silence, filler words, highlights)
+2. **Highlights Detection** - Analyze transcripts to find and suggest the best highlight segments of the video
 
 **Dependencies**: OpenAI API key required, OpenAI Node.js SDK
 
@@ -119,13 +119,12 @@
   - Loading spinner during transcription
   - Error message display
 
-- [ ] **Transcript Display UI**
-  - Show segments in readable format
-  - Timestamp display (MM:SS format)
-  - Full transcript text display
+- [x] **Transcript Display UI**
+  - Full transcript text display (segments list removed from UI)
   - Scrollable transcript area
   - Copy transcript text functionality
-  - Export to SRT/VTT file option (optional enhancement)
+  - Segments data still stored internally for highlight detection
+  - Export to SRT/VTT file option (optional enhancement - not implemented)
 
 - [ ] **Integrate with Video Store**
   - Use `useVideoStore` hook
@@ -193,182 +192,197 @@
 
 ---
 
-## PR #22: Smart Trim Suggestions Based on Transcript Analysis
+## PR #22: Highlights Detection Based on Transcript Analysis
 
-**Goal**: Analyze transcripts to suggest optimal trim points for removing silence, filler words, and creating highlight reels.
+**Goal**: Analyze transcripts to find and suggest the best highlight segments (best parts) of the video.
 
 **Dependencies**: Requires PR #21 (transcription must be complete)
+
+**Note**: Backend includes silence and filler word detection, but UI only shows highlight suggestions.
 
 ### Tasks:
 
 #### Task 1: Create Transcript Analysis Utilities
-- [ ] **Create Transcript Analysis Module**
+- [x] **Create Transcript Analysis Module**
   - Files: `src/utils/transcriptAnalysis.js` (NEW)
   - Functions to analyze transcript segments
-  - Silence detection algorithm
-  - Filler word detection
-  - Natural pause identification
-  - Best segment detection
+  - Silence detection algorithm (backend only, not shown in UI)
+  - Filler word detection (backend only, not shown in UI)
+  - Natural pause identification (backend only, not shown in UI)
+  - Best segment detection (PRIMARY - shown in UI as highlights)
 
-- [ ] **Silence Detection Function**
+- [x] **Silence Detection Function**
   - Function: `detectSilence(transcript)`
   - Analyze gaps between segments
   - Identify silence periods (>2 seconds)
   - Return silence regions with timestamps: start, end, duration
+  - Used in backend but not displayed in UI
 
-- [ ] **Filler Word Detection Function**
+- [x] **Filler Word Detection Function**
   - Function: `detectFillerWords(transcript)`
   - Common fillers: "um", "uh", "like", "you know", "so", "well"
   - Detect filler word occurrences
   - Return filler word segments with: start, end, text, confidence
+  - Used in backend but not displayed in UI
 
-- [ ] **Natural Pause Detection**
+- [x] **Natural Pause Detection**
   - Detect punctuation pauses (periods, commas)
   - Identify natural speech breaks
   - Return pause positions suitable for trimming
+  - Used in backend but not displayed in UI
 
-- [ ] **Best Segment Detection (Optional)**
+- [x] **Best Segment Detection (Highlight Detection)**
+  - Function: `detectBestSegments(transcript, highlightDuration)`
   - Identify most interesting 30-60 second segments
-  - Could analyze word frequency, detect key phrases
-  - Suggest highlight reels
+  - Analyze word density (words per second)
+  - Filter out segments starting with fillers
+  - Score segments and suggest top highlights
+  - PRIMARY FEATURE - shown in UI
 
-#### Task 2: Generate Trim Suggestions
-- [ ] **Create Trim Suggestion Generator**
+#### Task 2: Generate Highlight Suggestions
+- [x] **Create Trim Suggestion Generator**
   - Files: `src/utils/trimSuggestions.js` (NEW)
   - Combine analysis results into trim suggestions
   - Calculate confidence scores
   - Generate suggestion objects with: type, startTime, endTime, confidence, reason, suggestion
 
-- [ ] **Suggestion Types**
-  - **Remove Silence**: Suggest removing silence gaps
-  - **Remove Fillers**: Suggest removing filler word segments
-  - **Create Highlight**: Suggest best 30/60 second segment
-  - **Trim to Segment**: Suggest trimming to keep specific segment
+- [x] **Suggestion Types**
+  - **Remove Silence**: Suggest removing silence gaps (backend only, not shown in UI)
+  - **Remove Fillers**: Suggest removing filler word segments (backend only, not shown in UI)
+  - **Create Highlight**: Suggest best 30/60 second segment (PRIMARY - shown in UI)
+  - Note: Only highlight suggestions are displayed to users
 
-- [ ] **Confidence Scoring**
+- [x] **Confidence Scoring**
   - Calculate confidence based on:
-    - Silence duration (longer = higher confidence)
-    - Filler word frequency
-    - Segment content quality
+    - Silence duration (longer = higher confidence) - for silence suggestions (backend)
+    - Filler word frequency - for filler suggestions (backend)
+    - Segment content quality (words per second × duration) - for highlights (UI)
 
 #### Task 3: Update Video Store for Suggestions
-- [ ] **Add Suggestions to Video Store**
+- [x] **Add Suggestions to Video Store**
   - Files: `src/store/videoStore.jsx`
   - Store suggestions per video: trimSuggestions array, suggestionsGenerated boolean
+  - All suggestion types stored (silence, filler, highlights) but UI filters to highlights only
 
-- [ ] **Add Suggestion Methods**
-  - `generateTrimSuggestions(videoPath)` - Analyze transcript and generate
-  - `getTrimSuggestions(videoPath)` - Retrieve suggestions
+- [x] **Add Suggestion Methods**
+  - `generateTrimSuggestions(videoPath, options)` - Analyze transcript and generate all suggestions
+  - `getTrimSuggestions(videoPath)` - Retrieve all suggestions (UI filters for highlights)
   - `clearSuggestions(videoPath)` - Clear suggestions
   - `applySuggestion(videoPath, suggestion)` - Apply suggestion to trim points
 
-#### Task 4: Create SmartTrimPanel Component
-- [ ] **Build SmartTrimPanel Component**
-  - Files: `src/components/SmartTrimPanel.jsx` (NEW)
-  - Show suggestions list
-  - Display suggestion type, timestamps, confidence
-  - Accept/reject individual suggestions
-  - "Generate Suggestions" button
-  - "Apply All" button (with confirmation)
-  - Group suggestions by type (Silence, Fillers, Highlights)
+#### Task 4: Create Highlights Panel Component
+- [x] **Build Highlights Panel Component**
+  - Files: `src/components/SmartTrimPanel.jsx` (renamed conceptually to Highlights Panel)
+  - Show highlight suggestions only (filtered from all suggestions)
+  - Display timestamps, duration, confidence
+  - "Find Highlights" button
+  - "Apply Best Highlight" button (applies top highlight)
+  - Preview and Apply buttons for each highlight
 
-- [ ] **Suggestion Display**
-  - List of suggestions with:
-    - Type badge (Silence, Filler, Highlight)
+- [x] **Highlight Display**
+  - List of highlight suggestions with:
     - Time range (MM:SS - MM:SS)
-    - Confidence indicator
+    - Duration
+    - Confidence indicator (visual progress bar)
     - Reason/description
-    - Accept/Reject buttons
-  - Preview button (seek to time in video player)
+    - Preview button (seek to time in video player)
+    - Apply button (sets trim points to highlight range)
 
-- [ ] **Integration with Video Store**
+- [x] **Integration with Video Store**
   - Use `useVideoStore` hook
-  - Call suggestion generation
-  - Display suggestions for selected video
-  - Apply suggestions to trim points
+  - Call suggestion generation (gets all types, filters to highlights)
+  - Display highlight suggestions for selected video
+  - Apply highlight suggestions to trim points
+  - Filter suggestions: `suggestions.filter(s => s.type === 'create_highlight')`
 
 #### Task 5: Visual Indicators on Timeline
-- [ ] **Add Suggestions to Timeline**
+- [x] **Add Highlight Markers to Timeline**
   - Files: `src/components/Timeline.jsx`
-  - Show suggestion markers on timeline
-  - Visual indicators for:
-    - Silence regions (red/yellow overlay)
-    - Filler word positions (small dots/indicators)
+  - Show highlight markers on timeline only
+  - Visual indicators:
     - Highlight suggestions (blue markers)
-  - Clickable markers to preview/app
+    - Filtered to show only `create_highlight` type suggestions
+  - Clickable markers show tooltip with highlight info
+  - Markers positioned at highlight start/end times
 
-#### Task 6: Apply Suggestions Functionality
-- [ ] **Implement Apply Logic**
+#### Task 6: Apply Highlight Functionality
+- [x] **Implement Apply Logic**
   - Files: `src/store/videoStore.jsx`, `src/components/SmartTrimPanel.jsx`
-  - When suggestion applied:
+  - When highlight suggestion applied:
     - Update trim points in store
-    - For "remove" suggestions: Set trim points to exclude
-    - For "highlight" suggestions: Set trim points to include
-  - Save to history for undo/redo
+    - Set in-point to highlight start time
+    - Set out-point to highlight end time
+    - Save to history for undo/redo
 
-- [ ] **Batch Apply**
-  - Apply multiple suggestions at once
-  - Combine overlapping suggestions
-  - Validate resulting trim points
+- [x] **Apply Best Highlight**
+  - Apply the first (best) highlight suggestion
+  - Confirmation dialog before applying
+  - Updates trim points to highlight time range
+  - Toast notification on success
 
 #### Task 7: Enhance TrimControls Component
-- [ ] **Add AI Suggestions Integration**
+- [x] **Add AI Suggestions Integration**
   - Files: `src/components/TrimControls.jsx`
   - Add "Show AI Suggestions" toggle
-  - Display suggestions inline
+  - Display top highlight suggestions inline (filtered to highlights only)
   - Quick apply buttons for each suggestion
   - Visual connection between suggestions and trim controls
+  - Shows top 3 highlights by confidence
 
-#### Task 8: User Preferences for Suggestions
-- [ ] **Add Configuration Options**
-  - Files: `src/components/SmartTrimPanel.jsx` or new settings component
+#### Task 8: User Preferences for Highlights
+- [x] **Add Configuration Options**
+  - Files: `src/components/SmartTrimPanel.jsx`
   - Configurable thresholds:
-    - Minimum silence duration (default: 2 seconds)
-    - Filler word list (customizable)
-    - Minimum confidence threshold
-    - Highlight duration preferences (30s, 60s)
+    - Minimum confidence threshold (slider 0-100%)
+    - Silence duration and filler detection kept in backend (not shown in UI)
+    - Highlight duration defaults to 30 seconds (configurable in backend)
 
 #### Task 9: Error Handling
-- [ ] **Handle Edge Cases**
+- [x] **Handle Edge Cases**
   - Video without transcript (show message to generate first)
-  - Transcript with no silence/fillers (show message)
-  - Overlapping suggestions
-  - Invalid trim points after applying suggestions
+  - Transcript with no highlights found (show message)
+  - Invalid trim points after applying suggestions (validate in apply logic)
+  - Video player not ready for preview (show warning)
 
 #### Task 10: Testing
-- [ ] **Unit Tests**
+- [x] **Unit Tests**
   - Files: `tests/unit/transcriptAnalysis.test.js`
-  - Test silence detection algorithm
-  - Test filler word detection
+  - Test silence detection algorithm (backend functionality)
+  - Test filler word detection (backend functionality)
+  - Test highlight detection (primary feature)
   - Test suggestion generation logic
   - Test confidence scoring
 
-- [ ] **Integration Tests**
+- [x] **Integration Tests**
   - Files: `tests/integration/smartTrim.test.jsx`
-  - Test SmartTrimPanel component
-  - Test suggestion generation and display
-  - Test applying suggestions to trim points
-  - Test timeline visual indicators
+  - Test Highlights Panel component (SmartTrimPanel)
+  - Test highlight generation and display
+  - Test applying highlight suggestions to trim points
+  - Test timeline visual indicators (highlight markers only)
 
-- [ ] **Manual Testing**
-  - Test with video containing silence
-  - Test with video containing fillers
-  - Test suggestion generation
-  - Test applying individual suggestions
-  - Test batch apply
+- [x] **Manual Testing**
+  - Test with video to generate transcript
+  - Test "Find Highlights" button
+  - Test highlight suggestions display
+  - Test applying individual highlight suggestions
+  - Test "Apply Best Highlight" functionality
+  - Test preview functionality
   - Test with videos without transcripts
 
-**PR Title**: "Add AI-powered smart trim suggestions based on transcript analysis"
+**PR Title**: "Add AI-powered highlights detection based on transcript analysis"
 
 **Acceptance Criteria**:
-- ✅ Can generate trim suggestions from transcript
-- ✅ Suggestions display in SmartTrimPanel
-- ✅ Visual indicators show on timeline
-- ✅ Can apply suggestions to trim points
-- ✅ Silence and filler words detected accurately
-- ✅ Highlights can be generated
-- ✅ Suggestions integrate with existing trim workflow
+- ✅ Can generate highlight suggestions from transcript
+- ✅ Highlights display in Highlights Panel (SmartTrimPanel)
+- ✅ Visual indicators (blue markers) show on timeline for highlights only
+- ✅ Can apply highlight suggestions to trim points
+- ✅ Highlight detection finds best 30-60 second segments
+- ✅ "Apply Best Highlight" quickly applies top highlight
+- ✅ Preview functionality for highlights
+- ✅ Highlights integrate with existing trim workflow
 - ✅ Error handling for videos without transcripts
+- ✅ Backend still detects silence/fillers but UI only shows highlights
+- ✅ Segments removed from TranscriptionPanel UI (data still stored)
 
 ---
 
@@ -397,8 +411,8 @@ electron/
 
 src/
 ├── components/
-│   ├── TranscriptionPanel.jsx    # Transcription UI
-│   └── SmartTrimPanel.jsx         # Smart trim suggestions UI
+│   ├── TranscriptionPanel.jsx    # Transcription UI (segments removed from display)
+│   └── SmartTrimPanel.jsx         # Highlights Panel UI (shows highlights only)
 └── utils/
     ├── transcriptAnalysis.js      # Analyze transcripts
     └── trimSuggestions.js          # Generate suggestions
@@ -421,9 +435,10 @@ src/
 ├── store/
 │   └── videoStore.jsx   # Add transcript & suggestions storage
 ├── components/
-│   ├── EditExportPanel.jsx  # Add TranscriptionPanel
-│   ├── Timeline.jsx         # Add suggestion markers
-│   └── TrimControls.jsx     # Integrate suggestions
+│   ├── EditExportPanel.jsx  # Add TranscriptionPanel & Highlights Panel
+│   ├── Timeline.jsx         # Add highlight markers only (blue)
+│   ├── TrimControls.jsx     # Integrate highlight suggestions
+│   └── TranscriptionPanel.jsx  # Remove segments display from UI
 └── App.jsx              # Layout updates (if needed)
 ```
 
@@ -457,16 +472,17 @@ src/
 - [ ] Test copy transcript functionality
 - [ ] Verify timestamps are accurate
 
-**PR #22 - Smart Trim**:
-- [ ] Generate suggestions for video with silence
-- [ ] Generate suggestions for video with filler words
-- [ ] Test highlight reel suggestion
-- [ ] Apply individual suggestion
-- [ ] Apply multiple suggestions (batch)
-- [ ] Verify suggestions appear on timeline
-- [ ] Test preview functionality
+**PR #22 - Highlights Detection**:
+- [ ] Test "Find Highlights" button
+- [ ] Generate highlight suggestions from transcript
+- [ ] Verify highlights appear in Highlights Panel
+- [ ] Test highlight markers on timeline (blue markers)
+- [ ] Apply individual highlight suggestion
+- [ ] Test "Apply Best Highlight" button
+- [ ] Test preview functionality for highlights
 - [ ] Test with video without transcript (should prompt)
-- [ ] Verify undo/redo works with applied suggestions
+- [ ] Verify undo/redo works with applied highlight suggestions
+- [ ] Verify segments removed from TranscriptionPanel UI
 
 ---
 

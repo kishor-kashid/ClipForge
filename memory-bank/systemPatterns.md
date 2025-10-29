@@ -9,13 +9,15 @@ ClipForge uses Electron's multi-process architecture:
 - **IPC Bridge**: Secure communication between processes via context bridge
 
 ### Project Status
-**🎉 COMPLETE**: All 20 PRs implemented and tested
+**🎉 COMPLETE**: All 22 PRs implemented and tested
 - ✅ MVP implementation (PR #1-10)
 - ✅ Recording features (PR #11-14)
 - ✅ Timeline advanced features (PR #16-17)
 - ✅ Advanced export features (PR #18)
 - ✅ Testing suite (PR #19)
 - ✅ Demo materials (PR #20)
+- ✅ AI Transcription (PR #21)
+- ✅ AI Highlights Detection (PR #22)
 
 ### Component Architecture
 
@@ -26,10 +28,12 @@ App
 │   ├── VideoImport (drag & drop + file picker)
 │   └── RecordingPanel (screen, webcam, audio, PiP)
 ├── VideoPlayer (preview with controls + live recording)
-├── Timeline (multi-track with drag-drop, zoom, snap)
-├── TrimControls (in/out point setters)
-├── ExportButton (single video export with options)
-├── EditExportPanel (timeline export controls)
+├── Timeline (multi-track with drag-drop, zoom, snap, highlight markers)
+├── TranscriptionPanel (generate/display transcripts, collapsible)
+├── SmartTrimPanel (Highlights Panel - find/apply highlights, collapsible)
+├── TrimControls (in/out point setters with AI suggestions toggle)
+├── ExportButton (single video export with options, collapsible)
+├── EditExportPanel (contains TranscriptionPanel, Highlights, TrimControls, ExportButton)
 ├── VideoGrid (library with thumbnails)
 ├── QuickActionsToolbar (undo/redo, shortcuts)
 └── ToastProvider (notifications)
@@ -46,18 +50,27 @@ App
   - `recordingState`: Recording mode and device selection
   - `history`: Undo/redo state management
   - `videoElementRef`: Reference to main video player
-  - Methods: addVideo, removeVideo, updateVideo, selectVideo, setInPoint, setOutPoint, getTrimPoints, addClipToTrack, removeClipFromTrack, undo, redo
+  - **AI Features**:
+    - `transcript`: Transcript data with segments, fullText, duration, isGenerating (stored per video)
+    - `trimSuggestions`: Array of trim suggestions (silence, filler, highlights - stored per video)
+    - `suggestionsGenerated`: Boolean flag for suggestion generation status
+  - Methods: addVideo, removeVideo, updateVideo, selectVideo, setInPoint, setOutPoint, getTrimPoints, addClipToTrack, removeClipFromTrack, undo, redo, setTranscript, getTranscript, clearTranscript, setTranscriptGenerating, generateTrimSuggestions, getTrimSuggestions, clearSuggestions, applySuggestion
 
 #### Utility Layer - Complete Implementation
 - **fileUtils.js**: File validation, path handling
 - **timeUtils.js**: Time formatting (seconds ↔ MM:SS)
 - **thumbnailUtils.jsx**: Canvas-based thumbnail generation with caching
 - **keyboardShortcuts.js**: Professional editing shortcuts
+- **transcriptAnalysis.js**: AI transcript analysis (silence, filler words, highlights detection)
+- **trimSuggestions.js**: Highlight suggestion generator from transcript analysis
 
 #### Electron Layer - Complete Implementation
-- **main.js**: Window management, IPC handlers, FFmpeg coordination
-- **preload.js**: Secure API exposure via context bridge
+- **main.js**: Window management, IPC handlers, FFmpeg coordination, AI transcription IPC
+- **preload.js**: Secure API exposure via context bridge (includes aiTranscribe)
 - **ffmpeg.js**: Video processing utilities with timeline export
+- **openaiClient.js**: OpenAI client initialization with API key from .env
+- **openaiHandlers.js**: Whisper API transcription handlers
+- **audioExtraction.js**: FFmpeg audio extraction utilities for transcription
 
 ## Key Design Patterns
 

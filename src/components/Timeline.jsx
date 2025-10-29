@@ -18,6 +18,7 @@ export default function Timeline() {
     selectedVideo,
     selectVideo,
     getTrimPoints,
+    getTrimSuggestions,
     // Zoom and snap
     zoomLevel,
     zoomIn,
@@ -586,6 +587,32 @@ export default function Timeline() {
                   ))}
                 </div>
               )}
+
+              {/* Highlight Markers - Show for selected video */}
+              {selectedVideo && (() => {
+                const suggestions = getTrimSuggestions(selectedVideo);
+                // Only show highlight suggestions
+                const highlights = suggestions.filter(s => s.type === 'create_highlight');
+                return highlights.map((suggestion, index) => {
+                  // Only show markers that fall within the timeline duration
+                  if (suggestion.startTime > totalDuration) return null;
+
+                  const markerLeft = suggestion.startTime * pixelsPerSecond;
+                  const markerWidth = Math.max((suggestion.endTime - suggestion.startTime) * pixelsPerSecond, 4);
+
+                  return (
+                    <div
+                      key={`highlight-${index}`}
+                      className="absolute top-0 h-4 bg-blue-500 border border-blue-400 border-opacity-50 rounded cursor-pointer opacity-70 hover:opacity-100 transition-opacity z-10"
+                      style={{
+                        left: `${markerLeft}px`,
+                        width: `${markerWidth}px`,
+                      }}
+                      title={`Highlight: ${suggestion.reason} (${Math.round(suggestion.confidence * 100)}%)`}
+                    />
+                  );
+                });
+              })()}
 
               {/* Clips */}
               {track.clips.length === 0 ? (

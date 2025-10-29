@@ -177,26 +177,6 @@ export default function TranscriptionPanel() {
                   <div className="bg-gray-900 rounded p-3 max-h-60 overflow-y-auto">
                     <p className="text-white text-sm whitespace-pre-wrap">{transcript.fullText}</p>
                   </div>
-
-                  {/* Segments List */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-gray-300">Segments:</h4>
-                    <div className="space-y-1 max-h-80 overflow-y-auto">
-                      {transcript.segments.map((segment, index) => (
-                        <div
-                          key={index}
-                          className="bg-gray-900 rounded p-2 text-sm border border-gray-700"
-                        >
-                          <div className="flex items-start gap-2">
-                            <span className="text-blue-400 font-mono text-xs whitespace-nowrap">
-                              {formatTime(segment.start)} - {formatTime(segment.end)}
-                            </span>
-                            <span className="text-white flex-1">{segment.text}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               )}
 

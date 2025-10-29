@@ -4,7 +4,17 @@ import { formatTime } from '../utils/timeUtils';
 
 export default function TrimControls() {
   const [isOpen, setIsOpen] = useState(true);
-  const { selectedVideo, getSelectedVideoObject, setInPoint, setOutPoint, getTrimPoints, getVideoElement } = useVideoStore();
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const { 
+    selectedVideo, 
+    getSelectedVideoObject, 
+    setInPoint, 
+    setOutPoint, 
+    getTrimPoints, 
+    getVideoElement,
+    getTrimSuggestions,
+    applySuggestion,
+  } = useVideoStore();
   const [error, setError] = useState(null);
   const videoPlayerRef = useRef(null);
 
@@ -14,6 +24,12 @@ export default function TrimControls() {
   // Get trim points for the selected video
   const trimData = selectedVideo ? getTrimPoints(selectedVideo) : { inPoint: 0, outPoint: null };
   const { inPoint, outPoint } = trimData;
+
+  // Get suggestions if enabled
+  const suggestions = showSuggestions && selectedVideo ? getTrimSuggestions(selectedVideo) : [];
+  const filteredSuggestions = suggestions
+    .filter(s => s.confidence >= 0.5)
+    .slice(0, 3); // Show top 3 suggestions
 
   // Calculate trimmed duration
   const trimDuration = outPoint !== null && outPoint !== undefined 
@@ -86,6 +102,13 @@ export default function TrimControls() {
     
     setInPoint(selectedVideo, 0);
     setOutPoint(selectedVideo, null);
+    setError(null);
+  };
+
+  // Handle applying suggestion
+  const handleApplySuggestion = (suggestion) => {
+    if (!selectedVideo) return;
+    applySuggestion(selectedVideo, suggestion);
     setError(null);
   };
 
@@ -170,6 +193,55 @@ export default function TrimControls() {
                   Clear Trim
                 </button>
               </div>
+
+              {/* AI Suggestions Toggle */}
+              <div className="mb-3 flex items-center justify-between">
+                <label className="text-xs text-[#b3b3b3]">Show AI Suggestions</label>
+                <button
+                  onClick={() => setShowSuggestions(!showSuggestions)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    showSuggestions ? 'bg-[#4a9eff]' : 'bg-[#404040]'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      showSuggestions ? 'translate-x-5' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* AI Suggestions */}
+              {showSuggestions && filteredSuggestions.length > 0 && (
+                <div className="mb-3 bg-[#1a1a1a] rounded border border-[#404040] p-2">
+                  <h5 className="text-xs font-semibold text-[#4a9eff] mb-2">AI Suggestions</h5>
+                  <div className="space-y-1">
+                    {filteredSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-1.5 bg-[#2d2d2d] rounded text-xs"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[#b3b3b3] truncate">
+                            {suggestion.type === 'remove_silence' && '🔇 Remove silence'}
+                            {suggestion.type === 'remove_filler' && '🗣️ Remove filler'}
+                            {suggestion.type === 'create_highlight' && '⭐ Create highlight'}
+                          </div>
+                          <div className="text-[#666] text-[10px]">
+                            {formatTime(suggestion.startTime)} - {formatTime(suggestion.endTime)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleApplySuggestion(suggestion)}
+                          className="ml-2 px-2 py-0.5 bg-[#16a34a] hover:bg-[#15803d] text-white rounded text-[10px] transition-colors"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Instructions */}
               <div className="text-xs text-[#b3b3b3] bg-[#2d2d2d] rounded p-2">
