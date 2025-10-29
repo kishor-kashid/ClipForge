@@ -1,0 +1,160 @@
+Description: React component patterns and conventions
+Globs: src/**/*.jsx, src/**/*.js
+
+## Component Structure
+
+### Standard Component Pattern
+```jsx
+import { useVideoStore } from '../store/videoStore';
+import { formatTime } from '../utils/timeUtils';
+
+export const ComponentName = () => {
+  const { someState, someAction } = useVideoStore();
+  
+  const handleAction = async () => {
+    try {
+      await someAction();
+    } catch (error) {
+      // Error handling
+    }
+  };
+  
+  return (
+    <div className="tailwind-classes">
+      {/* Component JSX */}
+    </div>
+  );
+};
+```
+
+## State Management
+
+### Using Video Store
+```jsx
+import { useVideoStore } from '../store/videoStore';
+
+const MyComponent = () => {
+  // Get state and actions
+  const { videos, selectedVideo, addVideo, selectVideo } = useVideoStore();
+  
+  // Use in component
+};
+```
+
+### History Management
+- Always call `saveHistory()` before state mutations
+- Use `undo()` and `redo()` with Ctrl+Z/Ctrl+Y shortcuts
+- History limit: 50 actions with automatic cleanup
+
+## Styling Rules
+
+### Tailwind CSS Only
+- Use Tailwind utility classes exclusively
+- No custom CSS files (except `index.css` for global styles)
+- Dark theme: Use gray-800, gray-900 backgrounds
+- Accent color: blue-500, blue-600
+- Responsive: Use Tailwind responsive prefixes
+
+### Common Patterns
+```jsx
+// Buttons
+<button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+
+// Cards
+<div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+
+// Disabled states
+<button disabled className="opacity-50 cursor-not-allowed">
+```
+
+## Toast Notifications
+
+### Always Wrap in ToastProvider
+```jsx
+// App.jsx
+<ToastProvider>
+  <Component />
+</ToastProvider>
+
+// In component
+import { useToast } from '../components/ToastProvider';
+
+const { showToast } = useToast();
+showToast('Success message', 'success');
+```
+
+### Test Components with Toast
+```jsx
+// In tests
+import { ToastProvider } from '../components/ToastProvider';
+
+render(
+  <ToastProvider>
+    <Component />
+  </ToastProvider>
+);
+```
+
+## Keyboard Shortcuts
+
+### Pattern
+```jsx
+import { useKeyboardShortcuts } from '../utils/keyboardShortcuts';
+
+useKeyboardShortcuts({
+  'Space': () => handlePlayPause(),
+  'KeyI': () => setInPoint(),
+  'KeyO': () => setOutPoint(),
+});
+```
+
+### Available Shortcuts
+- Space: Play/Pause
+- I: Set In Point
+- O: Set Out Point
+- S: Split at playhead
+- Delete: Remove selected clip
+- Ctrl+Z: Undo
+- Ctrl+Y: Redo
+
+## Component Testing
+
+### Integration Test Pattern
+```jsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { VideoStoreProvider } from '../store/videoStore';
+import { ToastProvider } from '../components/ToastProvider';
+
+const renderWithProviders = (component) => {
+  return render(
+    <VideoStoreProvider>
+      <ToastProvider>
+        {component}
+      </ToastProvider>
+    </VideoStoreProvider>
+  );
+};
+```
+
+## Common Hooks
+
+### Video Element Reference
+```jsx
+const { videoElementRef } = useVideoStore();
+const videoElement = videoElementRef.current;
+if (videoElement) {
+  videoElement.currentTime = newTime;
+}
+```
+
+### Effect Cleanup Pattern
+```jsx
+useEffect(() => {
+  const stream = getStream();
+  
+  return () => {
+    // Cleanup
+    stream.getTracks().forEach(track => track.stop());
+  };
+}, [dependencies]);
+```

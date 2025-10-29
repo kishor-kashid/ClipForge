@@ -117,8 +117,6 @@ function RecordingPanel() {
 
     if (screenVideo.readyState >= 2) {
       ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
-    } else {
-      console.log('Screen video not ready, readyState:', screenVideo.readyState);
     }
 
     if (webcamVideo.readyState >= 2) {
@@ -148,8 +146,6 @@ function RecordingPanel() {
         ctx.fillStyle = '#4a9eff';
         ctx.fillRect(x - 3, y - 3, pipWidth + 6, pipHeight + 6);
         ctx.drawImage(webcamVideo, x, y, pipWidth, pipHeight);
-    } else {
-      console.log('Webcam video not ready, readyState:', webcamVideo.readyState);
     }
 
     // Continue the loop as long as we have active streams
@@ -172,7 +168,6 @@ function RecordingPanel() {
       const screenSources = sources.filter(s => s.type === 'screen');
       const source = screenSources.length > 0 ? screenSources[0] : sources[0];
       
-      console.log('Screen recording - Selected source:', { id: source.id, name: source.name, type: source.type });
       videoStream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
@@ -294,8 +289,6 @@ function RecordingPanel() {
       recorder.start();
       setMediaRecorder(recorder);
       startRecording(stream); // Pass stream to videoStore
-      
-      console.log('RecordingPanel: Started recording with stream:', stream);
     } catch (error) {
       console.error('Error starting recording:', error);
       addToast('Failed to start recording: ' + error.message, 'error');
@@ -349,10 +342,6 @@ function RecordingPanel() {
         // Set canvas dimensions after videos are loaded
         canvas.width = screenVideoRef.current.videoWidth || 1920;
         canvas.height = screenVideoRef.current.videoHeight || 1080;
-        
-        console.log('Canvas size:', canvas.width, 'x', canvas.height);
-        console.log('Screen video:', screenVideoRef.current.videoWidth, 'x', screenVideoRef.current.videoHeight);
-        console.log('Webcam video:', webcamVideoRef.current.videoWidth, 'x', webcamVideoRef.current.videoHeight);
         
         // Start continuous drawing
         drawToCanvas();
@@ -429,8 +418,6 @@ function RecordingPanel() {
       
       // Start the continuous drawing loop after recording begins
       drawToCanvas();
-      
-      console.log('RecordingPanel: Started PiP recording with stream:', stream);
     } catch (error) {
       console.error('Error starting PiP recording:', error);
       addToast('Failed to start PiP recording: ' + error.message, 'error');

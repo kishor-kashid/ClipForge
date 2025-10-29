@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
 import { useToast } from './ToastProvider';
@@ -18,6 +18,7 @@ export default function Timeline() {
     selectedVideo,
     selectVideo,
     getTrimPoints,
+    getTrimSuggestions,
     // Zoom and snap
     zoomLevel,
     zoomIn,
@@ -290,7 +291,8 @@ export default function Timeline() {
     }
   };
 
-  const getVideosInTimeline = () => {
+  // Memoize videos in timeline to avoid recalculating on every render
+  const videosInTimeline = useMemo(() => {
     const usedVideoPaths = new Set();
     
     // Collect all video paths that are used in any track
@@ -302,9 +304,7 @@ export default function Timeline() {
     
     // Filter videos to only include those used in tracks
     return videos.filter(video => usedVideoPaths.has(video.path));
-  };
-
-  const videosInTimeline = getVideosInTimeline();
+  }, [tracks, videos]);
 
   return (
     <div className="bg-[#252525] rounded-lg border border-[#404040] p-4">
@@ -469,18 +469,6 @@ export default function Timeline() {
               
               const isSplit = video.isSplit || false;
               
-              // Debug logging for split clips
-              if (isSplit) {
-                console.log('Split video in timeline library:', {
-                  name: video.name,
-                  path: video.path,
-                  originalDuration: video.duration,
-                  trim,
-                  effectiveDuration,
-                  isSplit
-                });
-              }
-              
               return (
                 <div
                   key={video.id}
@@ -587,6 +575,32 @@ export default function Timeline() {
                 </div>
               )}
 
+              {/* Highlight Markers - Show for selected video */}
+              {selectedVideo && (() => {
+                const suggestions = getTrimSuggestions(selectedVideo);
+                // Only show highlight suggestions
+                const highlights = suggestions.filter(s => s.type === 'create_highlight');
+                return highlights.map((suggestion, index) => {
+                  // Only show markers that fall within the timeline duration
+                  if (suggestion.startTime > totalDuration) return null;
+
+                  const markerLeft = suggestion.startTime * pixelsPerSecond;
+                  const markerWidth = Math.max((suggestion.endTime - suggestion.startTime) * pixelsPerSecond, 4);
+
+                  return (
+                    <div
+                      key={`highlight-${index}`}
+                      className="absolute top-0 h-4 bg-blue-500 border border-blue-400 border-opacity-50 rounded cursor-pointer opacity-70 hover:opacity-100 transition-opacity z-10"
+                      style={{
+                        left: `${markerLeft}px`,
+                        width: `${markerWidth}px`,
+                      }}
+                      title={`Highlight: ${suggestion.reason} (${Math.round(suggestion.confidence * 100)}%)`}
+                    />
+                  );
+                });
+              })()}
+
               {/* Clips */}
               {track.clips.length === 0 ? (
                 <div className="absolute inset-0 flex items-center justify-center text-[#666] text-xs">
@@ -612,20 +626,6 @@ export default function Timeline() {
 
                   // Check if this is a split clip
                   const isSplit = video?.isSplit || false;
-                  
-                  // Debug logging for clips on track
-                  if (video && isSplit) {
-                    console.log('Split clip on track:', {
-                      clipVideoPath: clip.videoPath,
-                      videoName: video.name,
-                      videoPath: video.path,
-                      clipDuration: clip.duration,
-                      videoDuration: video.duration,
-                      effectiveDuration,
-                      isSplit,
-                      trim: getTrimPoints(video.path)
-                    });
-                  }
                   
                   return (
                     <div

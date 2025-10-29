@@ -34,8 +34,6 @@ export default function VideoPlayer() {
         videoSrc = selectedVideoObject.path;
       }
       
-      console.log('Loading video:', { videoSrc, selectedVideoObject });
-      
       if (videoSrc && videoRef.current) {
         videoRef.current.src = videoSrc;
       }
@@ -60,30 +58,19 @@ export default function VideoPlayer() {
 
   // Handle recording stream updates from videoStore
   useEffect(() => {
-    console.log('VideoPlayer: Recording stream effect triggered:', { 
-      isRecording, 
-      hasStream: !!recordingStream,
-      hasVideoRef: !!recordingVideoRef.current 
-    });
-    
     // Wait for the video ref to be ready when recording starts
     if (isRecording && recordingStream) {
       // Use a timer to check when the ref becomes available
       const checkRef = setInterval(() => {
         if (recordingVideoRef.current) {
-          console.log('VideoPlayer: Video ref is ready, setting srcObject', recordingStream);
           clearInterval(checkRef);
           
           recordingVideoRef.current.srcObject = recordingStream;
           
           // Ensure the video plays
-          recordingVideoRef.current.play().then(() => {
-            console.log('VideoPlayer: Recording video playing successfully');
-          }).catch(error => {
+          recordingVideoRef.current.play().catch(error => {
             console.error('VideoPlayer: Error playing recording video:', error);
           });
-        } else {
-          console.log('VideoPlayer: Waiting for video ref...');
         }
       }, 50); // Check every 50ms
       
@@ -94,7 +81,6 @@ export default function VideoPlayer() {
       
       return () => clearInterval(checkRef);
     } else if (!isRecording && recordingVideoRef.current) {
-      console.log('VideoPlayer: Clearing recording video srcObject');
       recordingVideoRef.current.srcObject = null;
     }
   }, [isRecording, recordingStream]);
@@ -135,7 +121,6 @@ export default function VideoPlayer() {
 
   const handleLoadedMetadata = () => {
     if (videoRef.current && selectedVideoObject) {
-      console.log('Video metadata loaded:', videoRef.current.duration);
       const videoDuration = videoRef.current.duration;
       const trim = getTrimPoints(selectedVideoObject.path);
       
@@ -160,7 +145,6 @@ export default function VideoPlayer() {
   };
 
   const handleError = () => {
-    console.log('Video error occurred');
     setIsLoading(false);
     setError('Failed to load video. Please try another file.');
   };
@@ -232,9 +216,9 @@ export default function VideoPlayer() {
   }
 
   return (
-    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden h-full flex flex-col">
+    <div className="bg-[#252525] rounded-lg border border-[#404040] w-full h-full flex flex-col max-w-[1400px] mx-auto" style={{ maxHeight: '100%' }}>
       {/* Video Element */}
-      <div className="relative bg-black flex-1 flex items-center justify-center min-h-[300px]">
+      <div className="relative bg-black flex-1 flex items-center justify-center min-h-[450px] min-w-0 overflow-hidden aspect-video" style={{ flexShrink: 1, minHeight: 0 }}>
         {/* Recording Preview */}
         {isRecording && (
           <div className="absolute inset-0 z-10 bg-black">
@@ -268,7 +252,7 @@ export default function VideoPlayer() {
         {!isRecording && (
           <video
             ref={videoRef}
-            className="w-full h-auto max-h-[60vh]"
+            className="w-full h-full object-contain max-h-full"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onError={handleError}
@@ -315,28 +299,28 @@ export default function VideoPlayer() {
         )}
       </div>
 
-      {/* Controls Bar */}
-      <div className="bg-[#2d2d2d] p-4 space-y-3">
+      {/* Controls Bar - Always visible */}
+      <div className="bg-[#2d2d2d] p-5 space-y-4 flex-shrink-0 overflow-visible shadow-lg shadow-black/20 border-t border-[#404040]">
         {/* Video Info or Recording Info */}
         {isRecording ? (
           <div className="flex items-center justify-between">
-            <h3 className="text-white font-semibold truncate flex-1">
+            <h3 className="text-white font-semibold text-sm truncate flex-1">
               Recording in Progress...
             </h3>
-            <div className="flex items-center gap-2 text-xs text-red-400">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <div className="flex items-center gap-2 text-xs font-mono text-[#ef4444]">
+              <div className="w-2 h-2 bg-[#ef4444] rounded-full animate-pulse"></div>
               <span>{formatTime(Math.floor(recordingDuration))}</span>
             </div>
           </div>
         ) : selectedVideoObject ? (
-          <div className="flex items-center justify-between">
-            <h3 className="text-white font-semibold truncate flex-1">
+          <div className="flex items-center justify-between gap-4">
+            <h3 className="text-white font-semibold text-sm truncate flex-1">
               {selectedVideoObject.name}
             </h3>
-            <div className="flex items-center gap-2 text-xs text-[#b3b3b3]">
-              <span>{formatTime(currentTime)}</span>
-              <span>/</span>
-              <span>{formatTime(duration)}</span>
+            <div className="flex items-center gap-1.5 text-xs font-mono text-[#b3b3b3] bg-[#1a1a1a] px-3 py-1.5 rounded border border-[#404040]">
+              <span className="text-white">{formatTime(currentTime)}</span>
+              <span className="text-[#666]">/</span>
+              <span className="text-[#888]">{formatTime(duration)}</span>
             </div>
           </div>
         ) : null}
@@ -352,9 +336,9 @@ export default function VideoPlayer() {
               step="0.1"
               onChange={handleSeek}
               disabled={!!error || !duration}
-              className="w-full h-2"
+              className="w-full h-2 cursor-pointer"
               style={{
-                background: `linear-gradient(to right, #4a9eff 0%, #4a9eff ${(currentTime / (duration || 1)) * 100}%, #2d2d2d ${(currentTime / (duration || 1)) * 100}%, #2d2d2d 100%)`
+                background: `linear-gradient(to right, #4a9eff 0%, #4a9eff ${(currentTime / (duration || 1)) * 100}%, #404040 ${(currentTime / (duration || 1)) * 100}%, #404040 100%)`
               }}
             />
           </div>
@@ -362,41 +346,41 @@ export default function VideoPlayer() {
 
         {/* Play Controls - Only show when not recording */}
         {!isRecording && selectedVideoObject && (
-          <div className="flex items-center gap-2">
-          <button
-            onClick={handlePlayPause}
-            disabled={!!error}
-            className="flex items-center gap-2 px-6 py-2 bg-[#4a9eff] text-white rounded hover:bg-[#3a8eef] transition-all disabled:bg-[#404040] disabled:text-[#666] disabled:cursor-not-allowed"
-          >
-            {isPlaying ? (
-              <>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <span>Pause</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                </svg>
-                <span>Play</span>
-              </>
-            )}
-          </button>
-          
-          <button
-            onClick={handleSplit}
-            disabled={!!error || currentTime <= 0 || currentTime >= duration}
-            className="flex items-center gap-2 px-4 py-2 bg-[#404040] text-white rounded hover:bg-[#505050] transition-all disabled:bg-[#2d2d2d] disabled:text-[#666] disabled:cursor-not-allowed"
-            title="Split clip at current playhead position"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 011.414 1.414L6.414 15H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 011.414-1.414L15 13.586V12a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-            <span>Split</span>
-          </button>
-        </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handlePlayPause}
+              disabled={!!error}
+              className="btn btn-primary"
+            >
+              {isPlaying ? (
+                <>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span>Pause</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  </svg>
+                  <span>Play</span>
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={handleSplit}
+              disabled={!!error || currentTime <= 0.1 || currentTime >= duration - 0.1}
+              className="btn btn-secondary"
+              title="Split clip at current playhead position"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 11-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 112 0v1.586l2.293-2.293a1 1 0 011.414 1.414L6.414 15H8a1 1 0 110 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 110-2h1.586l-2.293-2.293a1 1 0 011.414-1.414L15 13.586V12a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              <span>Split</span>
+            </button>
+          </div>
         )}
       </div>
     </div>
