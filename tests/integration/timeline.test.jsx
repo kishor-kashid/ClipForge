@@ -3,9 +3,16 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { fireEvent } from '@testing-library/react';
 import { VideoProvider } from '../../src/store/videoStore';
+import { ToastProvider } from '../../src/components/ToastProvider';
 import Timeline from '../../src/components/Timeline';
 
-const TestWrapper = ({ children }) => <VideoProvider>{children}</VideoProvider>;
+const TestWrapper = ({ children }) => (
+  <VideoProvider>
+    <ToastProvider>
+      {children}
+    </ToastProvider>
+  </VideoProvider>
+);
 
 describe('Timeline - Integration Tests', () => {
   it('should display empty state when no videos', () => {
