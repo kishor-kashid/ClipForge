@@ -34,5 +34,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // AI Transcription API
   aiTranscribe: (videoPath) => ipcRenderer.invoke('ai:transcribe', videoPath),
+  
+  // AI Summarization API
+  aiSummarize: (transcriptText) => ipcRenderer.invoke('ai:summarize', transcriptText),
 });
 

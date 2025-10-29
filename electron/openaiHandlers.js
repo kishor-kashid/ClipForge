@@ -81,7 +81,112 @@ async function transcribeVideo(videoPath) {
   }
 }
 
+/**
+ * Generate content summary from transcript using OpenAI GPT
+ * @param {string} transcriptText - Full transcript text
+ * @returns {Promise<Object>} - Summary data with short, detailed, and key topics
+ */
+async function generateSummary(transcriptText) {
+  // Check if OpenAI client is available
+  if (!openai) {
+    throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in your .env file.');
+  }
+
+  if (!transcriptText || transcriptText.trim().length === 0) {
+    throw new Error('Transcript text is required for summary generation');
+  }
+
+  try {
+    console.log('Generating summary from transcript...');
+    
+    // Use GPT to generate comprehensive summary
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini', // Use efficient model for summarization
+      messages: [
+        {
+          role: 'system',
+          content: `You are a helpful assistant that creates concise, accurate summaries of video transcripts. Generate summaries that capture the main content, key topics, and important information.`
+        },
+        {
+          role: 'user',
+          content: `Please analyze this video transcript and provide:
+1. A short summary (1-2 sentences)
+2. A detailed summary (2-3 paragraphs)
+3. Key topics (bullet points of main themes)
+
+Transcript:
+${transcriptText}
+
+Format your response as JSON with the following structure:
+{
+  "short": "1-2 sentence summary",
+  "detailed": "2-3 paragraph detailed summary",
+  "keyTopics": ["topic 1", "topic 2", "topic 3"]
+}`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
+    });
+
+    // Extract summary from response
+    const content = response.choices[0]?.message?.content || '';
+    
+    // Try to parse as JSON (GPT should return JSON but might have markdown)
+    let summaryData;
+    try {
+      // Remove markdown code blocks if present
+      const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || 
+                       content.match(/(\{[\s\S]*\})/);
+      const jsonStr = jsonMatch ? jsonMatch[1] : content;
+      summaryData = JSON.parse(jsonStr);
+    } catch (parseError) {
+      // If JSON parsing fails, create structured response from text
+      console.warn('Failed to parse JSON, creating structured response from text');
+      const lines = content.split('\n').filter(l => l.trim());
+      summaryData = {
+        short: lines.find(l => l.toLowerCase().includes('short') || lines[0])?.replace(/.*?:/, '').trim() || 'Summary generated',
+        detailed: lines.join('\n\n'),
+        keyTopics: lines.filter(l => l.startsWith('-') || l.startsWith('•')).map(l => l.replace(/^[-•]\s*/, '').trim()).slice(0, 5)
+      };
+    }
+
+    // Ensure all fields exist
+    const summary = {
+      short: summaryData.short || 'Summary generated successfully',
+      detailed: summaryData.detailed || content,
+      keyTopics: Array.isArray(summaryData.keyTopics) ? summaryData.keyTopics : 
+                 (summaryData.keyTopics ? [summaryData.keyTopics] : []),
+      generatedAt: new Date().toISOString()
+    };
+
+    console.log('Summary generated successfully');
+    return summary;
+
+  } catch (error) {
+    console.error('Summary generation error:', error);
+    
+    // Handle specific OpenAI API errors
+    if (error.response) {
+      const status = error.response.status;
+      const statusText = error.response.statusText;
+      
+      if (status === 401) {
+        throw new Error('Invalid OpenAI API key. Please check your OPENAI_API_KEY in .env file.');
+      } else if (status === 429) {
+        throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+      } else {
+        throw new Error(`OpenAI API error: ${statusText} (${status})`);
+      }
+    }
+    
+    // Re-throw original error if not an API error
+    throw error;
+  }
+}
+
 module.exports = {
-  transcribeVideo
+  transcribeVideo,
+  generateSummary
 };
 

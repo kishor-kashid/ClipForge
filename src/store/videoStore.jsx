@@ -696,6 +696,78 @@ export function VideoProvider({ children }) {
   };
 
   /**
+   * Set summary for a video
+   * @param {string} videoPath - Path of the video
+   * @param {Object} summaryData - Summary data with short, detailed, keyTopics
+   */
+  const setSummary = (videoPath, summaryData) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              summary: {
+                ...summaryData,
+                isGenerating: false,
+                generatedAt: summaryData.generatedAt || new Date().toISOString(),
+              },
+            }
+          : video
+      )
+    );
+    saveToHistory('setSummary', `Generated summary for ${videoPath}`);
+  };
+
+  /**
+   * Get summary for a video
+   * @param {string} videoPath - Path of the video
+   * @returns {Object|null} - Summary data or null
+   */
+  const getSummary = (videoPath) => {
+    const video = videos.find((v) => v.path === videoPath);
+    return video?.summary || null;
+  };
+
+  /**
+   * Clear summary for a video
+   * @param {string} videoPath - Path of the video
+   */
+  const clearSummary = (videoPath) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              summary: null,
+            }
+          : video
+      )
+    );
+    saveToHistory('clearSummary', `Cleared summary for ${videoPath}`);
+  };
+
+  /**
+   * Set summary generating state
+   * @param {string} videoPath - Path of the video
+   * @param {boolean} isGenerating - Whether summarization is in progress
+   */
+  const setSummaryGenerating = (videoPath, isGenerating) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              summary: {
+                ...(video.summary || {}),
+                isGenerating,
+              },
+            }
+          : video
+      )
+    );
+  };
+
+  /**
    * Generate trim suggestions from transcript
    * @param {string} videoPath - Path of the video
    * @param {Object} options - Analysis options
@@ -857,6 +929,11 @@ export function VideoProvider({ children }) {
     getTranscript,
     clearTranscript,
     setTranscriptGenerating,
+    // Summary management
+    setSummary,
+    getSummary,
+    clearSummary,
+    setSummaryGenerating,
     // Trim suggestions
     generateTrimSuggestions,
     getTrimSuggestions,

@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import SmartTrimPanel from '../../src/components/SmartTrimPanel';
-import { VideoProvider } from '../../src/store/videoStore';
+import { VideoProvider, useVideoStore } from '../../src/store/videoStore';
 import { ToastProvider } from '../../src/components/ToastProvider';
+import React from 'react';
 
 // Mock window.electronAPI
 global.window = {
@@ -10,8 +11,26 @@ global.window = {
   electronAPI: {},
 };
 
+// Helper component to set up video store state
+function TestSetup({ video, children }) {
+  const { addVideo, selectVideo } = useVideoStore();
+  const [isSetup, setIsSetup] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (video && !isSetup) {
+      // State updates happen synchronously in tests
+      addVideo(video);
+      selectVideo(video.path);
+      setIsSetup(true);
+    }
+  }, [video, isSetup]);
+
+  return <>{children}</>;
+}
+
 describe('SmartTrimPanel Integration', () => {
   const mockVideo = {
+    id: 'test-video-1',
     path: '/test/video.mp4',
     name: 'Test Video',
     duration: 60,
@@ -31,11 +50,17 @@ describe('SmartTrimPanel Integration', () => {
     suggestionsGenerated: false,
   };
 
-  const renderComponent = (video = mockVideo) => {
+  const renderComponent = (video = null) => {
     return render(
       <ToastProvider>
         <VideoProvider>
-          <SmartTrimPanel />
+          {video ? (
+            <TestSetup video={video}>
+              <SmartTrimPanel />
+            </TestSetup>
+          ) : (
+            <SmartTrimPanel />
+          )}
         </VideoProvider>
       </ToastProvider>
     );
@@ -47,44 +72,51 @@ describe('SmartTrimPanel Integration', () => {
 
   it('should render SmartTrimPanel', () => {
     renderComponent();
-    expect(screen.getByText('Smart Trim')).toBeInTheDocument();
+    expect(screen.getByText('Highlights')).toBeInTheDocument();
   });
 
   it('should show message when no video is selected', () => {
     renderComponent();
-    expect(screen.getByText(/Select a video to generate trim suggestions/i)).toBeInTheDocument();
+    expect(screen.getByText(/Select a video to find highlights/i)).toBeInTheDocument();
   });
 
   it('should show generate button when transcript exists', async () => {
-    const { VideoProvider: Provider } = await import('../../src/store/videoStore');
-    const { useVideoStore } = await import('../../src/store/videoStore');
+    const { container } = renderComponent(mockVideo);
     
-    render(
-      <ToastProvider>
-        <Provider>
-          <SmartTrimPanel />
-        </Provider>
-      </ToastProvider>
+    // Wait for component to render with video and transcript
+    await waitFor(
+      () => {
+        // Should show the "Find Highlights" button when transcript exists
+        expect(screen.getByText(/Find Highlights/i)).toBeInTheDocument();
+      },
+      { container }
     );
-
-    // Wait for component to render with video
-    await waitFor(() => {
-      // This test would need the video to be added to the store
-      // For now, just check basic rendering
-    });
   });
 
-  it('should display configuration sliders', () => {
-    renderComponent();
-    // Configuration sliders should be visible when panel is open
-    expect(screen.getByText(/Min Silence Duration/i)).toBeInTheDocument();
+  it('should display configuration sliders', async () => {
+    const { container } = renderComponent(mockVideo);
+    
+    // Wait for component to render with video and transcript
+    // Configuration slider should be visible when panel is open and video has transcript
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Min Confidence:/i)).toBeInTheDocument();
+      },
+      { container }
+    );
   });
 
   it('should filter suggestions by confidence', async () => {
-    // This would require mocking the suggestion generation
-    // For now, just verify the component structure
-    renderComponent();
-    expect(screen.getByText(/Min Confidence/i)).toBeInTheDocument();
+    const { container } = renderComponent(mockVideo);
+    
+    // Wait for component to render with video and transcript
+    // The Min Confidence slider should be visible
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Min Confidence:/i)).toBeInTheDocument();
+      },
+      { container }
+    );
   });
 });
 

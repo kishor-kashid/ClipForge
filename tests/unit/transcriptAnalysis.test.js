@@ -156,28 +156,34 @@ describe('transcriptAnalysis', () => {
     it('should detect highlight segments', () => {
       const transcript = {
         segments: [
-          { start: 0, end: 5, text: 'This is a long interesting segment with many words' },
-          { start: 5, end: 10, text: 'Another good segment' },
-          { start: 10, end: 15, text: 'um uh' }, // Short filler
+          { start: 0, end: 8, text: 'This is a long interesting segment with many words and content' },
+          { start: 8, end: 16, text: 'Another good segment with substantial content to analyze' },
+          { start: 16, end: 20, text: 'One more segment with words' },
+          { start: 20, end: 22, text: 'um uh' }, // Short filler (filtered out)
         ],
       };
 
       const highlights = detectBestSegments(transcript, 30);
+      // Should find at least one highlight since we have multiple 8-second segments that can combine to 16+ seconds
       expect(highlights.length).toBeGreaterThan(0);
-      expect(highlights[0].duration).toBeGreaterThan(0);
+      expect(highlights[0].duration).toBeGreaterThanOrEqual(15); // Minimum 15 seconds
     });
 
     it('should filter out segments starting with fillers', () => {
       const transcript = {
         segments: [
-          { start: 0, end: 2, text: 'um hello' },
-          { start: 2, end: 10, text: 'This is a great segment' },
+          { start: 0, end: 3, text: 'um hello' }, // Starts with filler, filtered out
+          { start: 3, end: 11, text: 'This is a great segment with many words' },
+          { start: 11, end: 19, text: 'Another substantial segment with content' },
+          { start: 19, end: 27, text: 'One more good segment with words' },
         ],
       };
 
       const highlights = detectBestSegments(transcript, 30);
-      // Should prefer the second segment
+      // Should find highlights from the non-filler segments (can combine to 24 seconds)
       expect(highlights.length).toBeGreaterThan(0);
+      // Should not start with the filler segment
+      expect(highlights[0].start).toBeGreaterThanOrEqual(3);
     });
 
     it('should return empty array for empty transcript', () => {

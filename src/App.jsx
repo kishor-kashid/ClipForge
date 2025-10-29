@@ -300,7 +300,7 @@ function AppContent({ selectedVideoObject }) {
           />
           
           <QuickActionsToolbar />
-          <div className="flex-1 overflow-hidden p-4" style={{ paddingTop: '8px' }}>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4" style={{ paddingTop: '8px' }}>
             <Timeline />
           </div>
         </div>
