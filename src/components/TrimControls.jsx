@@ -3,7 +3,7 @@ import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
 
 export default function TrimControls() {
-  const { selectedVideo, getSelectedVideoObject, setInPoint, setOutPoint, getTrimPoints } = useVideoStore();
+  const { selectedVideo, getSelectedVideoObject, setInPoint, setOutPoint, getTrimPoints, getVideoElement } = useVideoStore();
   const [error, setError] = useState(null);
   const videoPlayerRef = useRef(null);
 
@@ -26,10 +26,10 @@ export default function TrimControls() {
       return;
     }
 
-    // Try to get video element from page
-    const videoElement = document.querySelector('video');
+    // Get video element from store
+    const videoElement = getVideoElement();
     if (!videoElement) {
-      setError('Video player not found');
+      setError('Video player not ready');
       return;
     }
 
@@ -53,10 +53,10 @@ export default function TrimControls() {
       return;
     }
 
-    // Try to get video element from page
-    const videoElement = document.querySelector('video');
+    // Get video element from store
+    const videoElement = getVideoElement();
     if (!videoElement) {
-      setError('Video player not found');
+      setError('Video player not ready');
       return;
     }
 
