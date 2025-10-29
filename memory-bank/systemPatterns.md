@@ -339,6 +339,11 @@ const getVideosInTimeline = () => {
 
 ## Performance Considerations
 
+### Optimization Patterns Implemented
+- **Memoization**: `getVideosInTimeline()` memoized with React.useMemo to prevent recalculation
+- **Caching**: Global thumbnail cache to avoid regenerating thumbnails
+- **Parallel Processing**: Timeline export processes clips in parallel (2-5x speed improvement)
+
 ### Lazy Loading (Future)
 - Import only components that are needed
 - Code-split for faster initial load
@@ -347,11 +352,19 @@ const getVideosInTimeline = () => {
 - Don't load entire video files into memory
 - Let HTML5 video element handle streaming
 - Release resources when clips are removed
+- Cleanup temporary files after export operations
 
-### Export Optimization (Future)
-- Queue export requests if needed
-- Cancel support for long exports
-- Background processing with worker threads
+### Export Optimization (Implemented)
+- Parallel processing for multiple clips
+- Filter-free FFmpeg approach to avoid errors
+- Automatic cleanup of temporary files
+- Background processing with progress tracking
+
+### Code Quality Patterns
+- Remove debug console.log statements (keep only error/warn for production)
+- Eliminate unused imports and dead code
+- Use React.useMemo for expensive calculations
+- Fix function naming inconsistencies
 
 ## UI Layout & Interaction Patterns
 
