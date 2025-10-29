@@ -3,7 +3,7 @@ import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
 
 export default function VideoPlayer() {
-  const { selectedVideo, videos, updateVideo, splitClip, getTrimPoints, isRecording, recordingDuration, recordingStream } = useVideoStore();
+  const { selectedVideo, videos, updateVideo, splitClip, getTrimPoints, isRecording, recordingDuration, recordingStream, setVideoElement } = useVideoStore();
   const videoRef = useRef(null);
   const recordingVideoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -47,6 +47,16 @@ export default function VideoPlayer() {
       };
     }
   }, [selectedVideoObject]);
+
+  // Register video element with store for trim controls
+  useEffect(() => {
+    if (videoRef.current && !isRecording) {
+      setVideoElement(videoRef.current);
+    } else if (isRecording) {
+      // Clear video element reference when recording (to prevent trim controls from accessing recording video)
+      setVideoElement(null);
+    }
+  }, [videoRef.current, isRecording, setVideoElement]);
 
   // Handle recording stream updates from videoStore
   useEffect(() => {

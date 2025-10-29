@@ -337,26 +337,28 @@ function RecordingPanel() {
         webcamVideoRef.current.srcObject = webcamStream;
         
         // Wait for both videos to load
-        Promise.all([
+        await Promise.all([
           new Promise(resolve => {
             screenVideoRef.current.onloadedmetadata = resolve;
           }),
           new Promise(resolve => {
             webcamVideoRef.current.onloadedmetadata = resolve;
           })
-        ]).then(() => {
-          canvas.width = screenVideoRef.current.videoWidth || 1920;
-          canvas.height = screenVideoRef.current.videoHeight || 1080;
-          
-          console.log('Canvas size:', canvas.width, 'x', canvas.height);
-          console.log('Screen video:', screenVideoRef.current.videoWidth, 'x', screenVideoRef.current.videoHeight);
-          console.log('Webcam video:', webcamVideoRef.current.videoWidth, 'x', webcamVideoRef.current.videoHeight);
-          
-          // Start continuous drawing
-          drawToCanvas();
-        });
+        ]);
+
+        // Set canvas dimensions after videos are loaded
+        canvas.width = screenVideoRef.current.videoWidth || 1920;
+        canvas.height = screenVideoRef.current.videoHeight || 1080;
+        
+        console.log('Canvas size:', canvas.width, 'x', canvas.height);
+        console.log('Screen video:', screenVideoRef.current.videoWidth, 'x', screenVideoRef.current.videoHeight);
+        console.log('Webcam video:', webcamVideoRef.current.videoWidth, 'x', webcamVideoRef.current.videoHeight);
+        
+        // Start continuous drawing
+        drawToCanvas();
       }
 
+      // Capture stream after canvas is properly set up
       const stream = canvas.captureStream(30);
 
       if (audioEnabled) {
@@ -471,7 +473,7 @@ function RecordingPanel() {
   };
 
   return (
-    <div className="bg-[#2d2d2d] rounded-lg border border-[#404040] p-4">
+    <div>
       <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
         <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
           <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 9a1 1 0 012 0v2a1 1 0 01-2 0V9z" />
@@ -647,6 +649,16 @@ function RecordingPanel() {
           </button>
         )}
       </div>
+
+      {/* Hidden elements for PiP recording */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+        <canvas ref={canvasRef} />
+        <video ref={screenVideoRef} autoPlay muted playsInline />
+        <video ref={webcamVideoRef} autoPlay muted playsInline />
+      </div>
+
+      {/* Hidden video element for preview */}
+      <video ref={videoRef} style={{ display: 'none' }} autoPlay muted playsInline />
     </div>
   );
 }

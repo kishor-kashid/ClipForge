@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
+import { useToast } from './ToastProvider';
 import { VideoThumbnail } from '../utils/thumbnailUtils.jsx';
 
 export default function Timeline() {
@@ -30,11 +31,18 @@ export default function Timeline() {
     selectedClip,
     setSelectedClip,
   } = useVideoStore();
+  const { addToast } = useToast();
 
   const [draggedClip, setDraggedClip] = useState(null);
   const [draggedFromLibrary, setDraggedFromLibrary] = useState(null);
   const [dropIndicatorPosition, setDropIndicatorPosition] = useState(null);
   const [dropIndicatorTrack, setDropIndicatorTrack] = useState(null);
+
+  // Timeline export state
+  const [isExportingTimeline, setIsExportingTimeline] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportStatus, setExportStatus] = useState('idle'); // idle, exporting, success, error
+  const [exportError, setExportError] = useState(null);
 
   const handleDragStart = (e, clip, fromLibrary = false, trackId = null) => {
     if (fromLibrary) {
@@ -48,7 +56,15 @@ export default function Timeline() {
 
   const handleDragOver = (e, trackId) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = draggedFromLibrary ? 'copy' : 'move';
+    
+    // Check if this is a drag from VideoGrid (external drag)
+    // Note: getData() is not available during dragover, so we check types instead
+    if (e.dataTransfer.types.includes('text/plain')) {
+      e.dataTransfer.dropEffect = 'copy';
+    } else {
+      // Handle internal timeline drags
+      e.dataTransfer.dropEffect = draggedFromLibrary ? 'copy' : 'move';
+    }
     
     // Calculate and show drop indicator
     const trackElement = e.currentTarget;
@@ -81,8 +97,36 @@ export default function Timeline() {
       dropTime = snapToGrid(dropTime);
     }
     
+    // Check for drag data from VideoGrid (external drag)
+    const dragData = e.dataTransfer.getData('text/plain');
+    if (dragData) {
+      try {
+        const parsedData = JSON.parse(dragData);
+        if (parsedData.type === 'video' && parsedData.video) {
+          const video = parsedData.video;
+          // Calculate effective duration based on trim points
+          const trim = getTrimPoints(video.path);
+          let effectiveDuration = video.duration;
+          if (trim.inPoint !== undefined || trim.outPoint !== undefined) {
+            const inPoint = trim.inPoint || 0;
+            const outPoint = trim.outPoint || video.duration || 0;
+            effectiveDuration = outPoint - inPoint;
+          }
+          
+          addClipToTrack(trackId, {
+            videoPath: video.path,
+            duration: effectiveDuration,
+            startTime: dropTime,
+          });
+          return; // Exit early since we handled the external drag
+        }
+      } catch (error) {
+        console.error('Error parsing drag data:', error);
+      }
+    }
+    
     if (draggedFromLibrary) {
-      // Adding from library
+      // Adding from timeline library
       const video = videos.find(v => v.path === draggedFromLibrary.path);
       if (video) {
         // Calculate effective duration based on trim points
@@ -162,6 +206,106 @@ export default function Timeline() {
   const basePixelsPerSecond = 10; // Base scale factor
   const pixelsPerSecond = basePixelsPerSecond * zoomLevel; // Apply zoom
 
+  // Get videos that are currently used in timeline tracks
+  // Setup progress listener for timeline export
+  useEffect(() => {
+    if (window.electronAPI && window.electronAPI.onExportProgress) {
+      window.electronAPI.onExportProgress((percent) => {
+        setExportProgress(percent);
+      });
+    }
+
+    return () => {
+      if (window.electronAPI && window.electronAPI.removeExportProgressListener) {
+        window.electronAPI.removeExportProgressListener();
+      }
+    };
+  }, []);
+
+  // Timeline export functionality
+  const handleTimelineExport = async () => {
+    // Check if there are any clips to export
+    const hasClips = tracks.some(track => track.clips.length > 0);
+    if (!hasClips) {
+      addToast('No clips to export. Add videos to timeline first.', 'warning');
+      return;
+    }
+
+    if (!window.electronAPI) {
+      setExportError('Export API not available');
+      setExportStatus('error');
+      return;
+    }
+
+    try {
+      setIsExportingTimeline(true);
+      setExportStatus('exporting');
+      setExportProgress(0);
+      setExportError(null);
+
+      // Step 1: Show save dialog
+      const saveResult = await window.electronAPI.saveVideoFile();
+      
+      if (saveResult.canceled) {
+        setIsExportingTimeline(false);
+        setExportStatus('idle');
+        return;
+      }
+
+      const outputPath = saveResult.filePath;
+      
+      // Step 2: Prepare videos object for export
+      const videosObject = {};
+      videos.forEach(video => {
+        videosObject[video.path] = video;
+      });
+
+      // Step 3: Export timeline
+      const exportResult = await window.electronAPI.exportTimeline({
+        tracks: tracks,
+        outputPath: outputPath,
+        videos: videosObject,
+      });
+
+      if (exportResult.success) {
+        setExportStatus('success');
+        setExportProgress(100);
+        addToast('Timeline exported successfully!', 'success');
+        // Reset after 3 seconds
+        setTimeout(() => {
+          setExportStatus('idle');
+          setExportProgress(0);
+        }, 3000);
+      } else {
+        setExportError(exportResult.error || 'Export failed');
+        setExportStatus('error');
+        addToast('Timeline export failed: ' + (exportResult.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      setExportError(error.message || 'Export failed');
+      setExportStatus('error');
+      addToast('Timeline export failed: ' + (error.message || 'Unknown error'), 'error');
+    } finally {
+      setIsExportingTimeline(false);
+    }
+  };
+
+  const getVideosInTimeline = () => {
+    const usedVideoPaths = new Set();
+    
+    // Collect all video paths that are used in any track
+    tracks.forEach(track => {
+      track.clips.forEach(clip => {
+        usedVideoPaths.add(clip.videoPath);
+      });
+    });
+    
+    // Filter videos to only include those used in tracks
+    return videos.filter(video => usedVideoPaths.has(video.path));
+  };
+
+  const videosInTimeline = getVideosInTimeline();
+
   return (
     <div className="bg-[#252525] rounded-lg border border-[#404040] p-4">
       {/* Header */}
@@ -240,22 +384,80 @@ export default function Timeline() {
             </svg>
             Add Track
           </button>
+
+          {/* Timeline Export */}
+          <button
+            onClick={handleTimelineExport}
+            disabled={isExportingTimeline || !tracks.some(track => track.clips.length > 0)}
+            className={`px-3 py-1.5 rounded text-sm flex items-center gap-1 transition-colors ${
+              isExportingTimeline || !tracks.some(track => track.clips.length > 0)
+                ? 'bg-[#404040] text-[#666] cursor-not-allowed'
+                : 'bg-[#16a34a] hover:bg-[#15803d] text-white'
+            }`}
+            title={tracks.some(track => track.clips.length > 0) ? 'Export Timeline' : 'No clips to export'}
+          >
+            {isExportingTimeline ? (
+              <>
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+                Export Timeline
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Video Library (draggable source) */}
+      {/* Export Status Messages */}
+      {exportStatus === 'success' && (
+        <div className="mb-4 p-3 bg-green-900 bg-opacity-20 border border-green-500 text-green-300 rounded text-sm">
+          ✓ Timeline exported successfully!
+        </div>
+      )}
+
+      {exportStatus === 'error' && exportError && (
+        <div className="mb-4 p-3 bg-red-900 bg-opacity-20 border border-red-500 text-red-300 rounded text-sm">
+          ✗ {exportError}
+        </div>
+      )}
+
+      {/* Export Progress Bar */}
+      {isExportingTimeline && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-[#b3b3b3]">Exporting Timeline...</span>
+            <span className="text-sm text-[#b3b3b3]">{Math.round(exportProgress)}%</span>
+          </div>
+          <div className="w-full bg-[#2d2d2d] rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-[#16a34a] h-full transition-all duration-300"
+              style={{ width: `${exportProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Video Library (shows only videos used in timeline) */}
       <div className="mb-4 bg-[#1a1a1a] rounded-lg p-3">
         <div className="text-sm text-[#b3b3b3] mb-2 flex items-center gap-2">
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
           </svg>
-          Video Library (drag to timeline)
+          Timeline Videos ({videosInTimeline.length})
         </div>
         <div className="flex gap-2 overflow-x-auto">
-          {videos.length === 0 ? (
-            <div className="text-[#666] text-xs py-2">No videos imported yet</div>
+          {videosInTimeline.length === 0 ? (
+            <div className="text-[#666] text-xs py-2">No videos in timeline yet - drag from left library</div>
           ) : (
-            videos.map((video) => {
+            videosInTimeline.map((video) => {
               // Calculate effective duration for this video
               const trim = getTrimPoints(video.path);
               let effectiveDuration = video.duration || 0;
@@ -269,7 +471,7 @@ export default function Timeline() {
               
               // Debug logging for split clips
               if (isSplit) {
-                console.log('Split video in library:', {
+                console.log('Split video in timeline library:', {
                   name: video.name,
                   path: video.path,
                   originalDuration: video.duration,

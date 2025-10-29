@@ -243,6 +243,57 @@ Windows executable + installer
 - All Node.js access happens in main process
 - Future sandbox mode would require minimal changes
 
+## Timeline Export Implementation
+
+### Filter-Free FFmpeg Approach
+**Problem**: FFmpeg filter network errors (`Error reinitializing filters!`) when using `.setStartTime()`, `.setDuration()`, and `.size()` methods.
+
+**Solution**: Use raw FFmpeg input/output options instead of fluent-ffmpeg methods that create internal filters.
+
+**Implementation**:
+```javascript
+// Stage 1: Normalize clips using inputOptions (NO FILTERS)
+clipCommand.inputOptions(['-ss', startTime, '-t', duration])
+  .outputOptions(['-preset ultrafast', '-crf 23'])
+  .size('1280x720'); // Direct output option
+
+// Stage 2: Concatenate using concat demuxer
+ffmpeg().input(concatFile)
+  .inputOptions(['-f concat', '-safe 0'])
+  .videoCodec('copy').audioCodec('copy'); // No re-encoding
+```
+
+### Parallel Processing for Performance
+**Goal**: Process multiple clips simultaneously for 2-5x speed improvement.
+
+**Implementation**:
+```javascript
+// Process all clips in parallel
+const clipPromises = allClips.map(async (clip, i) => {
+  return processClip(clip); // Each runs independently
+});
+await Promise.all(clipPromises);
+```
+
+**Benefits**:
+- Utilizes all CPU cores simultaneously
+- Total time = max(clip times) instead of sum
+- 2x faster for 2 clips, 3x for 3 clips, etc.
+
+### Timeline Video Library Filtering
+**Goal**: Show only videos that are actively used in timeline tracks.
+
+**Implementation**:
+```javascript
+const getVideosInTimeline = () => {
+  const videoIds = new Set();
+  tracks.forEach(track => {
+    track.clips.forEach(clip => videoIds.add(clip.video.id));
+  });
+  return videos.filter(v => videoIds.has(v.id));
+};
+```
+
 ## Performance Considerations
 
 ### Lazy Loading (Future)

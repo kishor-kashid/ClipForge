@@ -34,6 +34,7 @@ export function VideoProvider({ children }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [selectedClip, setSelectedClip] = useState(null);
+  const [videoElementRef, setVideoElementRef] = useState(null);
   
   // Undo/Redo state
   const [history, setHistory] = useState([]);
@@ -586,6 +587,22 @@ export function VideoProvider({ children }) {
    */
   const canRedo = () => historyIndex < history.length - 1;
 
+  /**
+   * Set video element reference for trim controls
+   * @param {HTMLVideoElement} element - Video element reference
+   */
+  const setVideoElement = (element) => {
+    setVideoElementRef(element);
+  };
+
+  /**
+   * Get current video element reference
+   * @returns {HTMLVideoElement|null} - Video element reference
+   */
+  const getVideoElement = () => {
+    return videoElementRef;
+  };
+
   const value = {
     videos,
     selectedVideo,
@@ -640,6 +657,9 @@ export function VideoProvider({ children }) {
     canUndo,
     canRedo,
     saveToHistory,
+    // Video element reference
+    setVideoElement,
+    getVideoElement,
   };
 
   return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;
