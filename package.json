@@ -1,7 +1,7 @@
 {
   "name": "clipforge",
   "version": "1.0.0",
-  "description": "A desktop video editor for trimming and exporting videos",
+  "description": "A professional desktop video editor with AI-powered transcription, trimming, recording, and exporting capabilities",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k -s first \"npm run dev:vite\" \"wait-on http://localhost:5173 && electron .\"",
@@ -18,7 +18,12 @@
     "electron",
     "video",
     "editor",
-    "ffmpeg"
+    "ffmpeg",
+    "ai",
+    "transcription",
+    "video-editor",
+    "timeline",
+    "recording"
   ],
   "author": "",
   "license": "ISC",
