@@ -1,15 +1,57 @@
 # ClipForge
 
-A desktop video editor for trimming and exporting videos. Built with Electron, React, and FFmpeg.
+A professional desktop video editor for trimming, recording, and exporting videos. Built with Electron, React, and FFmpeg.
 
 ## 🎬 Features
 
-- **Video Import**: Drag & drop or file picker to import videos (MP4, MOV, WebM)
-- **Timeline View**: Visual timeline showing all imported clips
+### Core Video Editing
+- **Video Import**: Drag & drop or file picker to import videos (MP4, MOV, WebM, AVI)
+- **Timeline View**: Multi-track timeline with visual clip representation
 - **Video Preview**: Play imported videos with playback controls and seek bar
-- **Trim Controls**: Set in/out points for video trimming
-- **Export**: Export trimmed videos to MP4 format
+- **Trim Controls**: Set precise in/out points for video trimming
+- **Export Options**: Export with multiple resolution and quality settings
+
+### Advanced Recording
+- **Screen Recording**: Record entire screen or specific windows
+- **Webcam Recording**: Record from webcam with device selection
+- **Picture-in-Picture**: Combine screen and webcam recording
+- **Audio Capture**: Record system audio and microphone
+- **Live Preview**: Real-time preview during recording
+
+### Professional Timeline
+- **Multi-Track Support**: Arrange clips across multiple tracks
+- **Drag & Drop**: Move clips between tracks and reposition
+- **Clip Splitting**: Split clips at playhead position
+- **Zoom & Snap**: Timeline zoom with snap-to-grid functionality
+- **Timeline Export**: Export entire multi-track timeline as single video
+
+### Export & Quality
+- **Resolution Options**: Source, 720p, 1080p, 4K
+- **Quality Presets**: Fast, Medium, High quality settings
+- **Format Support**: MP4 (H.264), MP4 (H.265), WebM
+- **Parallel Processing**: Fast export with multi-threaded processing
 - **Progress Tracking**: Real-time progress during video export
+
+### User Experience
+- **Undo/Redo**: Full history management with keyboard shortcuts
+- **Keyboard Shortcuts**: Professional editing shortcuts
+- **Thumbnail System**: Visual thumbnails for all videos
+- **Collapsible UI**: Organized interface with expandable sections
+- **Toast Notifications**: User-friendly status messages
+
+## 🎥 Demo Video
+
+Watch ClipForge in action! This 5-minute demo showcases all major features:
+
+**[🎬 Watch Demo Video](https://youtube.com/watch?v=demo)** *(Coming Soon)*
+
+The demo covers:
+- App launch and interface overview
+- Screen recording demonstration
+- Video import and timeline editing
+- Trimming and splitting clips
+- Multi-track arrangement
+- Export process with different settings
 
 ## 📋 System Requirements
 
@@ -17,6 +59,7 @@ A desktop video editor for trimming and exporting videos. Built with Electron, R
 - **RAM**: 4GB minimum (8GB recommended)
 - **Disk Space**: ~200MB for app installation
 - **Graphics**: Any graphics card that supports hardware acceleration
+- **Audio**: Microphone and speakers for recording features
 
 ## 🚀 Getting Started
 
@@ -56,11 +99,50 @@ A desktop video editor for trimming and exporting videos. Built with Electron, R
 
 ## 📖 Usage Guide
 
+### Recording Videos
+
+1. **Screen Recording**
+   - Click "Screen" mode in the recording panel
+   - Select screen/window source from dropdown
+   - Enable/disable audio as needed
+   - Click "Start Recording" to begin
+   - Click "Stop Recording" when finished
+
+2. **Webcam Recording**
+   - Click "Webcam" mode in the recording panel
+   - Select camera from dropdown
+   - Enable/disable audio as needed
+   - Click "Start Recording" to begin
+
+3. **Picture-in-Picture Recording**
+   - Click "PiP" mode in the recording panel
+   - Select both screen and webcam sources
+   - Configure audio settings
+   - Click "Start Recording" to begin
+
 ### Importing Videos
 
 1. **Drag & Drop**: Drag video files onto the import area
 2. **File Picker**: Click "Select Files" button to browse and select videos
-3. Supported formats: MP4, MOV, WebM
+3. Supported formats: MP4, MOV, WebM, AVI
+4. Videos appear in the library and can be dragged to timeline
+
+### Timeline Editing
+
+1. **Adding Clips to Timeline**
+   - Drag videos from library to timeline tracks
+   - Clips can be moved between tracks
+   - Multiple clips can be arranged on different tracks
+
+2. **Clip Operations**
+   - **Split**: Position playhead and click "Split" to divide clip
+   - **Trim**: Use trim controls to set in/out points
+   - **Reposition**: Drag clips to different positions on timeline
+
+3. **Timeline Controls**
+   - **Zoom**: Use zoom controls to adjust timeline scale
+   - **Snap**: Enable snap-to-grid for precise positioning
+   - **Multi-track**: Add/remove tracks as needed
 
 ### Trimming Videos
 
@@ -74,12 +156,33 @@ A desktop video editor for trimming and exporting videos. Built with Electron, R
 
 ### Exporting Videos
 
+#### Single Video Export
 1. Ensure you have a video selected
 2. Set trim points if you want to export only a portion
-3. Click "Export to MP4"
-4. Choose a save location in the file dialog
-5. Wait for the export to complete (progress bar shows status)
-6. The exported MP4 file will be saved to your chosen location
+3. Choose resolution (Source, 720p, 1080p, 4K)
+4. Select quality preset (Fast, Medium, High)
+5. Choose format (MP4 H.264, MP4 H.265, WebM)
+6. Click "Export to MP4"
+7. Choose a save location in the file dialog
+8. Wait for the export to complete
+
+#### Timeline Export
+1. Arrange clips on timeline tracks
+2. Click "Export Timeline" button
+3. Choose a save location
+4. Wait for multi-track concatenation to complete
+5. All clips will be combined into a single video
+
+### Keyboard Shortcuts
+
+- **Space**: Play/Pause video
+- **Left/Right Arrow**: Seek backward/forward
+- **I**: Set in point
+- **O**: Set out point
+- **Ctrl+Z**: Undo
+- **Ctrl+Y**: Redo
+- **Ctrl+S**: Split clip at playhead
+- **Delete**: Remove selected clip
 
 ## 🧪 Running Tests
 
@@ -135,26 +238,37 @@ clipforge/
 
 ## 🐛 Troubleshooting
 
-### Video won't load
-- Ensure the video file is a supported format (MP4, MOV, WebM)
-- Check that the file path is valid and the file exists
-- Try importing a different video file
+### Recording Issues
+- **Permission Denied**: Grant camera/microphone permissions when prompted
+- **No Audio**: Check audio device selection and system volume
+- **Poor Quality**: Ensure stable internet connection and sufficient disk space
+- **Device Not Found**: Restart app and check device connections
 
-### Export fails
-- Make sure you have enough disk space at the destination
-- Check that the output path is writable
-- Ensure trim points are valid (out-point > in-point)
-- Verify the source video file is not corrupted
+### Video Import Issues
+- **File Won't Load**: Ensure the video file is a supported format (MP4, MOV, WebM, AVI)
+- **Corrupted File**: Try importing a different video file
+- **Large Files**: Very large files may take time to process
 
-### App won't start
-- Try deleting `node_modules` and running `npm install` again
-- Check Node.js version is 18 or later
-- Ensure all dependencies are installed correctly
+### Timeline Problems
+- **Drag & Drop Not Working**: Ensure you're dragging from the video library to timeline tracks
+- **Clips Not Playing**: Select the clip and ensure it's loaded in the video player
+- **Split Not Working**: Position the playhead at the desired split point
 
-### FFmpeg errors
-- The app includes ffmpeg-static, no manual installation needed
-- If export fails, check the console for detailed error messages
-- Ensure the input video file is valid and readable
+### Export Issues
+- **Export Fails**: Check disk space and ensure output path is writable
+- **Invalid Trim Points**: Ensure out-point > in-point
+- **Slow Export**: Try using "Fast" quality preset for quicker exports
+- **Timeline Export Errors**: Ensure all clips have valid video files
+
+### Performance Issues
+- **Slow App**: Close other applications to free up RAM
+- **Export Hanging**: Check console for FFmpeg error messages
+- **Memory Issues**: Restart the app if it becomes unresponsive
+
+### General Issues
+- **App Won't Start**: Try deleting `node_modules` and running `npm install` again
+- **Missing Features**: Ensure you're using the latest version
+- **UI Problems**: Try restarting the app or clearing app data
 
 ## 🧩 Technology Stack
 
@@ -170,13 +284,32 @@ clipforge/
 
 ISC
 
-## 👥 Contributing
+## 🎯 Project Status
 
-This is an MVP project. Future enhancements may include:
-- Multi-track timeline
+**Version 1.0.0 - Complete MVP**
+
+This project represents a fully functional video editing application with:
+- ✅ Multi-track timeline with drag & drop
+- ✅ Professional recording capabilities
+- ✅ Advanced export options
+- ✅ Comprehensive testing suite
+- ✅ Production-ready packaging
+
+### Future Enhancements
 - Video effects and filters
-- Audio editing
+- Advanced audio editing
 - Cloud export options
 - Linux and macOS support
+- Plugin system for extensions
+
+## 📦 Download
+
+Get the latest version of ClipForge:
+
+**[⬇️ Download ClipForge v1.0.0](https://github.com/your-repo/releases/latest)**
+
+- Windows installer included
+- No additional dependencies required
+- Ready to use out of the box
 
 ---

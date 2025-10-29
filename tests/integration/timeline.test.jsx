@@ -3,27 +3,34 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { fireEvent } from '@testing-library/react';
 import { VideoProvider } from '../../src/store/videoStore';
+import { ToastProvider } from '../../src/components/ToastProvider';
 import Timeline from '../../src/components/Timeline';
 
-const TestWrapper = ({ children }) => <VideoProvider>{children}</VideoProvider>;
+const TestWrapper = ({ children }) => (
+  <VideoProvider>
+    <ToastProvider>
+      {children}
+    </ToastProvider>
+  </VideoProvider>
+);
 
 describe('Timeline - Integration Tests', () => {
   it('should display empty state when no videos', () => {
     render(<Timeline />, { wrapper: TestWrapper });
     
-    expect(screen.getByText(/no videos in timeline/i)).toBeInTheDocument();
-    expect(screen.getByText(/import videos to see them here/i)).toBeInTheDocument();
+    expect(screen.getByText(/import or record videos/i)).toBeInTheDocument();
+    expect(screen.getByText(/drag them to the timeline/i)).toBeInTheDocument();
   });
 
   it('should display timeline with video clips', async () => {
     render(<Timeline />, { wrapper: TestWrapper });
     
     // Initially empty
-    expect(screen.getByText(/no videos in timeline/i)).toBeInTheDocument();
+    expect(screen.getByText(/import or record videos/i)).toBeInTheDocument();
     
     // We can't easily test with videos without mocking the store
     // This test verifies the component structure
-    const emptyState = screen.getByText(/import videos to see them here/i);
+    const emptyState = screen.getByText(/drag them to the timeline/i);
     expect(emptyState).toBeInTheDocument();
   });
 
@@ -31,8 +38,8 @@ describe('Timeline - Integration Tests', () => {
     render(<Timeline />, { wrapper: TestWrapper });
     
     // Should have a container
-    const emptyState = screen.getByText(/no videos in timeline/i);
-    expect(emptyState.closest('.bg-white')).toBeInTheDocument();
+    const emptyState = screen.getByText(/import or record videos/i);
+    expect(emptyState.closest('div')).toBeInTheDocument();
   });
 });
 

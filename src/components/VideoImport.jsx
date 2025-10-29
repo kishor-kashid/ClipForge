@@ -115,11 +115,11 @@ export default function VideoImport() {
 
   const dropZoneClasses = `
     flex flex-col items-center justify-center
-    min-h-[300px] border-2 border-dashed rounded-lg
+    min-h-[150px] border-2 border-dashed rounded-lg
     transition-colors duration-200
-    ${isDragging 
-      ? 'border-blue-500 bg-blue-50' 
-      : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+    ${isDragging
+      ? 'border-[#4a9eff] bg-[#1e3a5f]' 
+      : 'border-[#404040] hover:border-[#4a9eff] bg-[#252525]'
     }
     ${error ? 'border-red-500' : ''}
   `;
@@ -133,7 +133,7 @@ export default function VideoImport() {
         onDrop={handleDrop}
       >
         <svg
-          className="w-16 h-16 text-gray-400 mb-4"
+          className="w-12 h-12 text-[#666] mb-3"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -147,20 +147,20 @@ export default function VideoImport() {
         </svg>
         
         {isDragging ? (
-          <p className="text-lg font-semibold text-blue-600">
+          <p className="text-lg font-semibold text-[#4a9eff]">
             Drop your video files here
           </p>
         ) : (
           <>
-            <p className="text-lg font-semibold text-gray-700 mb-2">
+            <p className="text-sm font-semibold text-[#b3b3b3] mb-1">
               Drag & drop video files here
             </p>
-            <p className="text-sm text-gray-500 mb-4">
-              Supported formats: MP4, MOV, WebM
+            <p className="text-xs text-[#666] mb-3">
+              MP4, MOV, WebM
             </p>
             <button
               onClick={handleSelectFiles}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors"
+              className="px-6 py-2 bg-[#4a9eff] text-white rounded hover:bg-[#3a8eef] cursor-pointer transition-colors font-medium text-sm"
             >
               Select Files
             </button>
@@ -178,7 +178,7 @@ export default function VideoImport() {
       </div>
 
       {error && (
-        <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mt-3 p-3 bg-red-900 bg-opacity-20 border border-red-500 text-red-300 rounded text-sm">
           {error}
         </div>
       )}

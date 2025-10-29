@@ -3,7 +3,7 @@ import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
 
 export default function TrimControls() {
-  const { selectedVideo, getSelectedVideoObject, setInPoint, setOutPoint, getTrimPoints } = useVideoStore();
+  const { selectedVideo, getSelectedVideoObject, setInPoint, setOutPoint, getTrimPoints, getVideoElement } = useVideoStore();
   const [error, setError] = useState(null);
   const videoPlayerRef = useRef(null);
 
@@ -26,10 +26,10 @@ export default function TrimControls() {
       return;
     }
 
-    // Try to get video element from page
-    const videoElement = document.querySelector('video');
+    // Get video element from store
+    const videoElement = getVideoElement();
     if (!videoElement) {
-      setError('Video player not found');
+      setError('Video player not ready');
       return;
     }
 
@@ -53,10 +53,10 @@ export default function TrimControls() {
       return;
     }
 
-    // Try to get video element from page
-    const videoElement = document.querySelector('video');
+    // Get video element from store
+    const videoElement = getVideoElement();
     if (!videoElement) {
-      setError('Video player not found');
+      setError('Video player not ready');
       return;
     }
 
@@ -91,79 +91,77 @@ export default function TrimControls() {
   // No video selected
   if (!selectedVideoObject) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-        <p className="text-gray-600">Select a video to set trim points</p>
+      <div className="bg-[#252525] rounded-lg border border-[#404040] p-6 text-center">
+        <p className="text-[#b3b3b3]">Select a video to set trim points</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Trim Controls</h2>
-        <span className="text-sm text-gray-600">
+    <div className="bg-[#252525] rounded-lg border border-[#404040] p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-white">Trim Controls</h2>
+        <span className="text-xs text-[#b3b3b3] truncate max-w-[140px]">
           {selectedVideoObject.name}
         </span>
       </div>
 
       {/* Current Trim Points */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <p className="text-sm font-semibold text-blue-700 mb-1">In-Point</p>
-          <p className="text-2xl font-bold text-blue-900">
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="bg-[#1e3a5f] rounded p-3 border border-[#2563eb]">
+          <p className="text-xs font-semibold text-[#60a5fa] mb-1">In-Point</p>
+          <p className="text-lg font-bold text-[#93c5fd]">
             {formatTime(inPoint)}
           </p>
         </div>
         
-        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-          <p className="text-sm font-semibold text-green-700 mb-1">Out-Point</p>
-          <p className="text-2xl font-bold text-green-900">
+        <div className="bg-[#1a3a2e] rounded p-3 border border-[#16a34a]">
+          <p className="text-xs font-semibold text-[#4ade80] mb-1">Out-Point</p>
+          <p className="text-lg font-bold text-[#86efac]">
             {outPoint !== null && outPoint !== undefined ? formatTime(outPoint) : '--:--'}
           </p>
         </div>
         
-        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-          <p className="text-sm font-semibold text-purple-700 mb-1">Duration</p>
-          <p className="text-2xl font-bold text-purple-900">
+        <div className="bg-[#2d1b4e] rounded p-3 border border-[#9333ea]">
+          <p className="text-xs font-semibold text-[#a78bfa] mb-1">Duration</p>
+          <p className="text-lg font-bold text-[#c4b5fd]">
             {trimDuration !== null ? formatTime(trimDuration) : '--:--'}
           </p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex gap-4 mb-4">
+      <div className="space-y-2 mb-3">
         <button
           onClick={handleSetInPoint}
-          className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+          className="w-full px-4 py-2 bg-[#2563eb] text-white rounded hover:bg-[#1d4ed8] transition-colors font-medium text-sm"
         >
           Set In Point
         </button>
         
         <button
           onClick={handleSetOutPoint}
-          className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+          className="w-full px-4 py-2 bg-[#16a34a] text-white rounded hover:bg-[#15803d] transition-colors font-medium text-sm"
         >
           Set Out Point
         </button>
         
         <button
           onClick={handleClearTrim}
-          className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-semibold"
+          className="w-full px-4 py-2 bg-[#404040] text-white rounded hover:bg-[#525252] transition-colors font-medium text-sm"
         >
-          Clear
+          Clear Trim
         </button>
       </div>
 
       {/* Instructions */}
-      <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 mb-4">
-        <p>
-          💡 Play the video to find where you want to start (in-point) and end (out-point), then click the buttons.
-        </p>
+      <div className="text-xs text-[#b3b3b3] bg-[#2d2d2d] rounded p-2">
+        <p>Play video to mark start and end points</p>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="mt-3 bg-red-900 bg-opacity-20 border border-red-500 text-red-300 px-3 py-2 rounded text-sm">
           {error}
         </div>
       )}

@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Export video with FFmpeg
   exportVideo: (params) => ipcRenderer.invoke('export:video', params),
   
+  // Export timeline with FFmpeg
+  exportTimeline: (params) => ipcRenderer.invoke('export:timeline', params),
+  
   // Listen for export progress updates
   onExportProgress: (callback) => {
     ipcRenderer.on('export:progress', (event, percent) => callback(percent));
@@ -24,5 +27,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeExportProgressListener: () => {
     ipcRenderer.removeAllListeners('export:progress');
   },
+  
+  // Recording APIs
+  getScreenSources: () => ipcRenderer.invoke('recording:getScreenSources'),
+  saveRecording: (buffer, extension) => ipcRenderer.invoke('recording:save', buffer, extension),
 });
 

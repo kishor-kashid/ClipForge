@@ -32,7 +32,7 @@ describe('VideoPlayer - Integration Tests', () => {
     render(<VideoPlayer />, { wrapper: TestWrapper });
     
     expect(screen.getByText(/no video selected/i)).toBeInTheDocument();
-    expect(screen.getByText(/select a video from the timeline to preview/i)).toBeInTheDocument();
+    expect(screen.getByText(/select a video from the library or start recording/i)).toBeInTheDocument();
   });
 
   it('should display video info when a video is selected', () => {

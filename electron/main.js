@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, desktopCapturer } = require('electron');
 const path = require('path');
-const { exportVideo } = require('./ffmpeg');
+const fs = require('fs');
+const { exportVideo, exportTimeline } = require('./ffmpeg');
 
 // Better dev detection - check if app is packaged
 const isDev = !app.isPackaged;
@@ -103,6 +104,85 @@ ipcMain.handle('export:video', async (event, params) => {
 
     return { success: true, path: exportedPath };
   } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+/**
+ * Handle timeline export with FFmpeg
+ */
+ipcMain.handle('export:timeline', async (event, params) => {
+  try {
+    const { tracks, outputPath, videos } = params;
+
+    // Validate parameters
+    if (!tracks || !outputPath || !videos) {
+      throw new Error('Tracks, output path, and videos are required');
+    }
+
+    // Export timeline with progress updates
+    const exportedPath = await exportTimeline(
+      { tracks, outputPath, videos },
+      (percent) => {
+        // Send progress updates to renderer
+        mainWindow.webContents.send('export:progress', percent);
+      }
+    );
+
+    return { success: true, path: exportedPath };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+/**
+ * Handle getting screen sources for recording
+ */
+ipcMain.handle('recording:getScreenSources', async () => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['window', 'screen'],
+      thumbnailSize: { width: 320, height: 200 }
+    });
+
+    return sources.map(source => ({
+      id: source.id,
+      name: source.name,
+      type: source.id.startsWith('screen:') ? 'screen' : 'window',
+      thumbnail: source.thumbnail.toDataURL()
+    }));
+  } catch (error) {
+    console.error('Error getting screen sources:', error);
+    return [];
+  }
+});
+
+/**
+ * Handle saving recording blob
+ */
+ipcMain.handle('recording:save', async (event, dataArray, extension) => {
+  try {
+    // Get save location from user
+    const result = await dialog.showSaveDialog(mainWindow, {
+      filters: [
+        { name: 'Videos', extensions: [extension || 'webm'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      title: 'Save Recording',
+      defaultPath: `clipforge-recording-${Date.now()}.${extension || 'webm'}`
+    });
+
+    if (result.canceled || !result.filePath) {
+      return { success: false, error: 'Save cancelled' };
+    }
+
+    // Convert array to Buffer and save file
+    const buffer = Buffer.from(dataArray);
+    await fs.promises.writeFile(result.filePath, buffer);
+
+    return { success: true, path: result.filePath };
+  } catch (error) {
+    console.error('Error saving recording:', error);
     return { success: false, error: error.message };
   }
 });

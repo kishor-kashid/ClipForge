@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
+import { useToast } from './ToastProvider';
 
 export default function ExportButton() {
   const { selectedVideo, getSelectedVideoObject, getTrimPoints } = useVideoStore();
+  const { addToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('idle'); // idle, exporting, success, error
   const [errorMessage, setErrorMessage] = useState(null);
+  
+  // Export settings
+  const [resolution, setResolution] = useState('source');
+  const [quality, setQuality] = useState('medium');
+  const [format, setFormat] = useState('mp4-h264');
 
   // Get the selected video object
   const selectedVideoObject = getSelectedVideoObject();
@@ -36,6 +43,28 @@ export default function ExportButton() {
       }
     };
   }, []);
+
+  // Calculate estimated file size
+  const getEstimatedFileSize = () => {
+    if (!selectedVideoObject) return 'Unknown';
+    
+    const duration = outPoint !== null ? outPoint - inPoint : selectedVideoObject.duration;
+    if (!duration) return 'Unknown';
+    
+    // Base bitrate estimates (Mbps)
+    const qualityBitrates = {
+      fast: { '720p': 2, '1080p': 4, '4k': 8, 'source': 4 },
+      medium: { '720p': 4, '1080p': 8, '4k': 16, 'source': 8 },
+      high: { '720p': 8, '1080p': 16, '4k': 32, 'source': 16 }
+    };
+    
+    const bitrate = qualityBitrates[quality]?.[resolution] || 8;
+    const sizeInMB = (bitrate * duration) / 8; // Convert Mbps to MB
+    
+    if (sizeInMB < 1) return `${Math.round(sizeInMB * 1024)} KB`;
+    if (sizeInMB < 1024) return `${Math.round(sizeInMB)} MB`;
+    return `${Math.round(sizeInMB / 1024)} GB`;
+  };
 
   const handleExport = async () => {
     if (!selectedVideoObject) {
@@ -104,11 +133,15 @@ export default function ExportButton() {
         outputPath: outputPath,
         startTime: inPoint || 0,
         duration: duration,
+        resolution: resolution,
+        quality: quality,
+        format: format,
       });
 
       if (exportResult.success) {
         setStatus('success');
         setProgress(100);
+        addToast('Video exported successfully!', 'success');
         // Reset after 3 seconds
         setTimeout(() => {
           setStatus('idle');
@@ -117,10 +150,12 @@ export default function ExportButton() {
       } else {
         setErrorMessage(exportResult.error || 'Export failed');
         setStatus('error');
+        addToast('Export failed: ' + (exportResult.error || 'Unknown error'), 'error');
       }
     } catch (error) {
       setErrorMessage(error.message || 'Export failed');
       setStatus('error');
+      addToast('Export failed: ' + (error.message || 'Unknown error'), 'error');
     } finally {
       setIsExporting(false);
     }
@@ -129,25 +164,30 @@ export default function ExportButton() {
   // No video selected
   if (!selectedVideoObject) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-        <p className="text-gray-600">Select a video to export</p>
+      <div className="bg-[#252525] rounded-lg border border-[#404040] p-6 text-center">
+        <p className="text-[#b3b3b3]">Select a video to export</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Export</h2>
+    <div className="bg-[#252525] rounded-lg border border-[#404040] p-4">
+      <div className="flex items-center gap-2 mb-4">
+        <svg className="w-5 h-5 text-[#4ade80]" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+        <h2 className="text-lg font-bold text-white">Export</h2>
+      </div>
 
       {/* Status Message */}
       {status === 'success' && (
-        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+        <div className="mb-4 p-3 bg-green-900 bg-opacity-20 border border-green-500 text-green-300 rounded text-sm">
           ✓ Export completed successfully!
         </div>
       )}
 
       {status === 'error' && errorMessage && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-4 p-3 bg-red-900 bg-opacity-20 border border-red-500 text-red-300 rounded text-sm">
           ✗ {errorMessage}
         </div>
       )}
@@ -156,14 +196,67 @@ export default function ExportButton() {
       {isExporting && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700">Exporting...</span>
-            <span className="text-sm text-gray-600">{Math.round(progress)}%</span>
+            <span className="text-sm font-semibold text-[#b3b3b3]">Exporting...</span>
+            <span className="text-sm text-[#b3b3b3]">{Math.round(progress)}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-[#2d2d2d] rounded-full h-2 overflow-hidden">
             <div
-              className="bg-blue-600 h-full transition-all duration-300"
+              className="bg-[#4a9eff] h-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Export Settings */}
+      {!isExporting && (
+        <div className="mb-4 space-y-3">
+          {/* Resolution */}
+          <div>
+            <label className="block text-sm text-[#b3b3b3] mb-1">Resolution:</label>
+            <select
+              value={resolution}
+              onChange={(e) => setResolution(e.target.value)}
+              className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+            >
+              <option value="source">Source (Original)</option>
+              <option value="720p">720p (1280x720)</option>
+              <option value="1080p">1080p (1920x1080)</option>
+              <option value="4k">4K (3840x2160)</option>
+            </select>
+          </div>
+
+          {/* Quality */}
+          <div>
+            <label className="block text-sm text-[#b3b3b3] mb-1">Quality:</label>
+            <select
+              value={quality}
+              onChange={(e) => setQuality(e.target.value)}
+              className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+            >
+              <option value="fast">Fast (Lower quality, smaller file)</option>
+              <option value="medium">Medium (Balanced)</option>
+              <option value="high">High (Best quality, larger file)</option>
+            </select>
+          </div>
+
+          {/* Format */}
+          <div>
+            <label className="block text-sm text-[#b3b3b3] mb-1">Format:</label>
+            <select
+              value={format}
+              onChange={(e) => setFormat(e.target.value)}
+              className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+            >
+              <option value="mp4-h264">MP4 (H.264)</option>
+              <option value="mp4-h265">MP4 (H.265)</option>
+              <option value="webm">WebM</option>
+            </select>
+          </div>
+
+          {/* File size estimate */}
+          <div className="text-xs text-[#b3b3b3] bg-[#1a1a1a] p-2 rounded">
+            <p>Estimated file size: {getEstimatedFileSize()}</p>
           </div>
         </div>
       )}
@@ -172,10 +265,10 @@ export default function ExportButton() {
       <button
         onClick={handleExport}
         disabled={isExporting || shouldDisable}
-        className={`w-full px-6 py-4 rounded-lg font-semibold text-lg transition-all ${
+        className={`w-full px-4 py-3 rounded-lg font-semibold text-base transition-all ${
           isExporting || shouldDisable
-            ? 'bg-gray-400 text-white cursor-not-allowed'
-            : 'bg-green-600 text-white hover:bg-green-700'
+            ? 'bg-[#404040] text-[#666] cursor-not-allowed'
+            : 'bg-[#16a34a] text-white hover:bg-[#15803d]'
         }`}
       >
         {isExporting ? (
@@ -187,13 +280,13 @@ export default function ExportButton() {
             Exporting...
           </span>
         ) : (
-          'Export to MP4'
+          `Export to ${format.toUpperCase()}`
         )}
       </button>
 
       {/* Info */}
-      <div className="mt-4 text-sm text-gray-600">
-        <p>Exports the selected video with trim points applied (if set)</p>
+      <div className="mt-3 text-xs text-[#b3b3b3]">
+        <p>Exports selected video with trim points</p>
       </div>
     </div>
   );
