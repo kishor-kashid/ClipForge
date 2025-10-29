@@ -15,7 +15,6 @@ if (apiKey) {
     openaiClient = new OpenAI({
       apiKey: apiKey
     });
-    console.log('OpenAI client initialized successfully');
   } catch (error) {
     console.error('Error initializing OpenAI client:', error);
   }

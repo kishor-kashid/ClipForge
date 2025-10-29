@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
 import { useToast } from './ToastProvider';
@@ -291,7 +291,8 @@ export default function Timeline() {
     }
   };
 
-  const getVideosInTimeline = () => {
+  // Memoize videos in timeline to avoid recalculating on every render
+  const videosInTimeline = useMemo(() => {
     const usedVideoPaths = new Set();
     
     // Collect all video paths that are used in any track
@@ -303,9 +304,7 @@ export default function Timeline() {
     
     // Filter videos to only include those used in tracks
     return videos.filter(video => usedVideoPaths.has(video.path));
-  };
-
-  const videosInTimeline = getVideosInTimeline();
+  }, [tracks, videos]);
 
   return (
     <div className="bg-[#252525] rounded-lg border border-[#404040] p-4">
@@ -470,18 +469,6 @@ export default function Timeline() {
               
               const isSplit = video.isSplit || false;
               
-              // Debug logging for split clips
-              if (isSplit) {
-                console.log('Split video in timeline library:', {
-                  name: video.name,
-                  path: video.path,
-                  originalDuration: video.duration,
-                  trim,
-                  effectiveDuration,
-                  isSplit
-                });
-              }
-              
               return (
                 <div
                   key={video.id}
@@ -639,20 +626,6 @@ export default function Timeline() {
 
                   // Check if this is a split clip
                   const isSplit = video?.isSplit || false;
-                  
-                  // Debug logging for clips on track
-                  if (video && isSplit) {
-                    console.log('Split clip on track:', {
-                      clipVideoPath: clip.videoPath,
-                      videoName: video.name,
-                      videoPath: video.path,
-                      clipDuration: clip.duration,
-                      videoDuration: video.duration,
-                      effectiveDuration,
-                      isSplit,
-                      trim: getTrimPoints(video.path)
-                    });
-                  }
                   
                   return (
                     <div

@@ -23,7 +23,6 @@ export const useVideoThumbnail = (videoPath, timeOffset = 0) => {
     // Check cache first
     const cachedThumbnail = thumbnailCache.get(cacheKey);
     if (cachedThumbnail) {
-      console.log('Using cached thumbnail for:', videoPath);
       setThumbnail(cachedThumbnail);
       return;
     }
@@ -31,8 +30,6 @@ export const useVideoThumbnail = (videoPath, timeOffset = 0) => {
     const generateThumbnail = async () => {
       setLoading(true);
       try {
-        console.log('Generating thumbnail for:', videoPath, 'at time:', timeOffset);
-        
         // Create a video element to capture frame
         const video = document.createElement('video');
         video.crossOrigin = 'anonymous';
@@ -41,12 +38,10 @@ export const useVideoThumbnail = (videoPath, timeOffset = 0) => {
         
         return new Promise((resolve) => {
           video.onloadedmetadata = () => {
-            console.log('Video metadata loaded, duration:', video.duration);
             video.currentTime = Math.min(timeOffset, video.duration || 0);
           };
           
           video.onseeked = () => {
-            console.log('Video seeked to time:', video.currentTime);
             const canvas = document.createElement('canvas');
             canvas.width = 160; // Thumbnail width
             canvas.height = 90; // Thumbnail height (16:9 aspect ratio)
@@ -55,7 +50,6 @@ export const useVideoThumbnail = (videoPath, timeOffset = 0) => {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
             const dataURL = canvas.toDataURL('image/jpeg', 0.8);
-            console.log('Thumbnail generated successfully');
             
             // Cache the thumbnail
             thumbnailCache.set(cacheKey, dataURL);
@@ -119,15 +113,6 @@ export const VideoThumbnail = ({ videoPath, timeOffset = 0, className = '', widt
     );
   }
 
-  console.log('Rendering img element:', { 
-    videoPath, 
-    thumbnailLength: thumbnail?.length, 
-    thumbnailPrefix: thumbnail?.substring(0, 30),
-    width, 
-    height,
-    className 
-  });
-
   return (
     <img 
       src={thumbnail} 
@@ -137,9 +122,6 @@ export const VideoThumbnail = ({ videoPath, timeOffset = 0, className = '', widt
         width: `${width}px`, 
         height: `${height}px`,
         display: 'block'
-      }}
-      onLoad={() => {
-        console.log('Thumbnail image loaded successfully:', videoPath);
       }}
       onError={(e) => {
         console.error('Thumbnail image failed to load:', videoPath, e);

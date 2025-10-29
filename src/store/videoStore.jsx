@@ -501,7 +501,6 @@ export function VideoProvider({ children }) {
    * Export video (placeholder)
    */
   const exportVideo = () => {
-    console.log('Export video triggered');
     // This will be implemented in the ExportButton component
   };
 

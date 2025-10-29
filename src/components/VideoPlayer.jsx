@@ -34,8 +34,6 @@ export default function VideoPlayer() {
         videoSrc = selectedVideoObject.path;
       }
       
-      console.log('Loading video:', { videoSrc, selectedVideoObject });
-      
       if (videoSrc && videoRef.current) {
         videoRef.current.src = videoSrc;
       }
@@ -60,30 +58,19 @@ export default function VideoPlayer() {
 
   // Handle recording stream updates from videoStore
   useEffect(() => {
-    console.log('VideoPlayer: Recording stream effect triggered:', { 
-      isRecording, 
-      hasStream: !!recordingStream,
-      hasVideoRef: !!recordingVideoRef.current 
-    });
-    
     // Wait for the video ref to be ready when recording starts
     if (isRecording && recordingStream) {
       // Use a timer to check when the ref becomes available
       const checkRef = setInterval(() => {
         if (recordingVideoRef.current) {
-          console.log('VideoPlayer: Video ref is ready, setting srcObject', recordingStream);
           clearInterval(checkRef);
           
           recordingVideoRef.current.srcObject = recordingStream;
           
           // Ensure the video plays
-          recordingVideoRef.current.play().then(() => {
-            console.log('VideoPlayer: Recording video playing successfully');
-          }).catch(error => {
+          recordingVideoRef.current.play().catch(error => {
             console.error('VideoPlayer: Error playing recording video:', error);
           });
-        } else {
-          console.log('VideoPlayer: Waiting for video ref...');
         }
       }, 50); // Check every 50ms
       
@@ -94,7 +81,6 @@ export default function VideoPlayer() {
       
       return () => clearInterval(checkRef);
     } else if (!isRecording && recordingVideoRef.current) {
-      console.log('VideoPlayer: Clearing recording video srcObject');
       recordingVideoRef.current.srcObject = null;
     }
   }, [isRecording, recordingStream]);
@@ -135,7 +121,6 @@ export default function VideoPlayer() {
 
   const handleLoadedMetadata = () => {
     if (videoRef.current && selectedVideoObject) {
-      console.log('Video metadata loaded:', videoRef.current.duration);
       const videoDuration = videoRef.current.duration;
       const trim = getTrimPoints(selectedVideoObject.path);
       
@@ -160,7 +145,6 @@ export default function VideoPlayer() {
   };
 
   const handleError = () => {
-    console.log('Video error occurred');
     setIsLoading(false);
     setError('Failed to load video. Please try another file.');
   };

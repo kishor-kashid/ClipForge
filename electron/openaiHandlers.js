@@ -18,7 +18,6 @@ async function transcribeVideo(videoPath) {
 
   try {
     // Step 1: Extract audio from video
-    console.log('Extracting audio from video:', videoPath);
     audioPath = await extractAudio(videoPath, 'mp3');
 
     // Check file size (Whisper has 25MB limit)
@@ -30,7 +29,6 @@ async function transcribeVideo(videoPath) {
     }
 
     // Step 2: Send audio to Whisper API
-    console.log('Sending audio to Whisper API...');
     const transcription = await openai.audio.transcriptions.create({
       file: fs.createReadStream(audioPath),
       model: 'whisper-1',
@@ -46,8 +44,6 @@ async function transcribeVideo(videoPath) {
       language: transcription.language || 'unknown',
       generatedAt: new Date().toISOString()
     };
-
-    console.log('Transcription completed. Segments:', transcriptData.segments.length);
 
     return transcriptData;
 
@@ -97,8 +93,6 @@ async function generateSummary(transcriptText) {
   }
 
   try {
-    console.log('Generating summary from transcript...');
-    
     // Use GPT to generate comprehensive summary
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini', // Use efficient model for summarization
@@ -160,7 +154,6 @@ Format your response as JSON with the following structure:
       generatedAt: new Date().toISOString()
     };
 
-    console.log('Summary generated successfully');
     return summary;
 
   } catch (error) {
