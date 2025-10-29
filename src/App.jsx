@@ -43,8 +43,8 @@ function AppContent() {
           </div>
 
           {/* Center Panel - Video Player */}
-          <div className="flex-1 flex flex-col bg-[#1a1a1a] p-4">
-            <div className="flex-1">
+          <div className="flex-1 flex flex-col bg-[#1a1a1a] p-4 min-h-0">
+            <div className="flex items-center justify-center h-[calc(75vh-2rem)] max-h-[calc(75vh-2rem)] min-h-[500px]">
               <VideoPlayer />
             </div>
           </div>

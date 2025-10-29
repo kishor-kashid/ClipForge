@@ -232,9 +232,9 @@ export default function VideoPlayer() {
   }
 
   return (
-    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden h-full flex flex-col">
+    <div className="bg-[#252525] rounded-lg border border-[#404040] w-full h-full flex flex-col max-w-[1400px] mx-auto" style={{ maxHeight: '100%' }}>
       {/* Video Element */}
-      <div className="relative bg-black flex-1 flex items-center justify-center min-h-[300px]">
+      <div className="relative bg-black flex-1 flex items-center justify-center min-h-[450px] min-w-0 overflow-hidden aspect-video" style={{ flexShrink: 1, minHeight: 0 }}>
         {/* Recording Preview */}
         {isRecording && (
           <div className="absolute inset-0 z-10 bg-black">
@@ -268,7 +268,7 @@ export default function VideoPlayer() {
         {!isRecording && (
           <video
             ref={videoRef}
-            className="w-full h-auto max-h-[60vh]"
+            className="w-full h-full object-contain max-h-full"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onError={handleError}
@@ -315,8 +315,8 @@ export default function VideoPlayer() {
         )}
       </div>
 
-      {/* Controls Bar */}
-      <div className="bg-[#2d2d2d] p-4 space-y-3">
+      {/* Controls Bar - Always visible */}
+      <div className="bg-[#2d2d2d] p-4 space-y-3 flex-shrink-0 overflow-visible">
         {/* Video Info or Recording Info */}
         {isRecording ? (
           <div className="flex items-center justify-between">
@@ -387,7 +387,7 @@ export default function VideoPlayer() {
           
           <button
             onClick={handleSplit}
-            disabled={!!error || currentTime <= 0 || currentTime >= duration}
+            disabled={!!error || currentTime <= 0.1 || currentTime >= duration - 0.1}
             className="flex items-center gap-2 px-4 py-2 bg-[#404040] text-white rounded hover:bg-[#505050] transition-all disabled:bg-[#2d2d2d] disabled:text-[#666] disabled:cursor-not-allowed"
             title="Split clip at current playhead position"
           >
