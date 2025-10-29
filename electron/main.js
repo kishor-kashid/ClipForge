@@ -1,7 +1,13 @@
+// Load environment variables from .env file (if in dev mode)
+if (!require('electron').app.isPackaged) {
+  require('dotenv').config();
+}
+
 const { app, BrowserWindow, ipcMain, dialog, desktopCapturer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exportVideo, exportTimeline } = require('./ffmpeg');
+const { transcribeVideo, generateSummary } = require('./openaiHandlers');
 
 // Better dev detection - check if app is packaged
 const isDev = !app.isPackaged;
@@ -183,6 +189,47 @@ ipcMain.handle('recording:save', async (event, dataArray, extension) => {
     return { success: true, path: result.filePath };
   } catch (error) {
     console.error('Error saving recording:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+/**
+ * Handle video transcription using OpenAI Whisper API
+ */
+ipcMain.handle('ai:transcribe', async (event, videoPath) => {
+  try {
+    if (!videoPath) {
+      throw new Error('Video path is required');
+    }
+
+    // Check if file exists
+    await fs.promises.access(videoPath);
+
+    // Transcribe video
+    const transcriptData = await transcribeVideo(videoPath);
+
+    return { success: true, transcript: transcriptData };
+  } catch (error) {
+    console.error('Transcription error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+/**
+ * Handle content summarization using OpenAI GPT
+ */
+ipcMain.handle('ai:summarize', async (event, transcriptText) => {
+  try {
+    if (!transcriptText) {
+      throw new Error('Transcript text is required');
+    }
+
+    // Generate summary
+    const summaryData = await generateSummary(transcriptText);
+
+    return { success: true, summary: summaryData };
+  } catch (error) {
+    console.error('Summarization error:', error);
     return { success: false, error: error.message };
   }
 });

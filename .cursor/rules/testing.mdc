@@ -1,0 +1,138 @@
+Description: Testing patterns and requirements
+Globs: tests/**/*
+
+## Test Configuration
+
+### Setup
+- Vitest with jsdom environment
+- Testing Library for React components
+- Global setup in `tests/setup.js`
+- All tests in `tests/` directory
+
+### Test Structure
+```
+tests/
+├── setup.js           # Global test configuration
+├── unit/              # Fast, isolated tests
+│   ├── fileUtils.test.js
+│   ├── timeUtils.test.js
+│   └── videoStore.test.jsx
+└── integration/       # Component interaction tests
+    ├── videoImport.test.jsx
+    ├── videoPlayer.test.jsx
+    └── timeline.test.jsx
+```
+
+## Unit Test Pattern
+
+### Utility Functions
+```javascript
+import { describe, it, expect } from 'vitest';
+import { formatTime } from '../utils/timeUtils';
+
+describe('timeUtils', () => {
+  it('should format seconds to MM:SS', () => {
+    expect(formatTime(125)).toBe('02:05');
+  });
+});
+```
+
+### Store Tests
+```jsx
+import { renderHook, act } from '@testing-library/react';
+import { VideoStoreProvider, useVideoStore } from '../store/videoStore';
+
+describe('videoStore', () => {
+  it('should add video', () => {
+    const { result } = renderHook(() => useVideoStore(), {
+      wrapper: VideoStoreProvider
+    });
+    
+    act(() => {
+      result.current.addVideo(mockVideo);
+    });
+    
+    expect(result.current.videos).toHaveLength(1);
+  });
+});
+```
+
+## Integration Test Pattern
+
+### Component Testing
+```jsx
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { VideoStoreProvider } from '../store/videoStore';
+import { ToastProvider } from '../components/ToastProvider';
+import { Component } from '../components/Component';
+
+const renderWithProviders = (component) => {
+  return render(
+    <VideoStoreProvider>
+      <ToastProvider>
+        {component}
+      </ToastProvider>
+    </VideoStoreProvider>
+  );
+};
+
+describe('Component', () => {
+  it('should handle user interaction', async () => {
+    renderWithProviders(<Component />);
+    
+    const button = screen.getByRole('button', { name: /action/i });
+    fireEvent.click(button);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/success/i)).toBeInTheDocument();
+    });
+  });
+});
+```
+
+## Critical Test Requirements
+
+### Always Include
+1. **ToastProvider wrapper** - Components that use toast need provider
+2. **VideoStoreProvider wrapper** - Components that use store need provider
+3. **Async handling** - Use `waitFor` for async updates
+4. **Mock IPC** - Mock `window.electronAPI` for tests
+
+### Mock IPC Pattern
+```javascript
+// In test setup or beforeEach
+global.window.electronAPI = {
+  selectFile: vi.fn().mockResolvedValue({ canceled: false, filePaths: ['/path/to/file'] }),
+  exportVideo: vi.fn().mockResolvedValue({ success: true }),
+};
+```
+
+## Test Coverage Goals
+
+### Current Status
+- **69 tests total**
+- **100% pass rate**
+- All components tested
+- All utilities tested
+
+### Maintain Coverage
+- Add tests for new features
+- Update tests when components change
+- Fix tests when they break (don't delete)
+- Keep integration tests for critical workflows
+
+## Running Tests
+
+```bash
+# All tests
+npm test
+
+# Unit only
+npm run test:unit
+
+# Integration only
+npm run test:integration
+
+# Watch mode
+npm run test:watch
+```

@@ -85,6 +85,15 @@ export function VideoProvider({ children }) {
         id: Date.now().toString(),
         addedAt: new Date().toISOString(),
         isRecording: video.isRecording || false,
+        transcript: video.transcript || {
+          segments: [],
+          fullText: '',
+          duration: 0,
+          generatedAt: null,
+          isGenerating: false
+        },
+        trimSuggestions: video.trimSuggestions || [],
+        suggestionsGenerated: video.suggestionsGenerated || false,
       }];
     });
     
@@ -492,7 +501,6 @@ export function VideoProvider({ children }) {
    * Export video (placeholder)
    */
   const exportVideo = () => {
-    console.log('Export video triggered');
     // This will be implemented in the ExportButton component
   };
 
@@ -603,6 +611,261 @@ export function VideoProvider({ children }) {
     return videoElementRef;
   };
 
+  /**
+   * Set transcript for a video
+   * @param {string} videoPath - Path of the video
+   * @param {Object} transcriptData - Transcript data with segments, fullText, duration
+   */
+  const setTranscript = (videoPath, transcriptData) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              transcript: {
+                ...transcriptData,
+                isGenerating: false,
+                generatedAt: transcriptData.generatedAt || new Date().toISOString(),
+              },
+            }
+          : video
+      )
+    );
+    saveToHistory('setTranscript', `Generated transcript for ${videoPath}`);
+  };
+
+  /**
+   * Get transcript for a video
+   * @param {string} videoPath - Path of the video
+   * @returns {Object|null} - Transcript data or null
+   */
+  const getTranscript = (videoPath) => {
+    const video = videos.find((v) => v.path === videoPath);
+    return video?.transcript || null;
+  };
+
+  /**
+   * Clear transcript for a video
+   * @param {string} videoPath - Path of the video
+   */
+  const clearTranscript = (videoPath) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              transcript: {
+                segments: [],
+                fullText: '',
+                duration: 0,
+                generatedAt: null,
+                isGenerating: false,
+              },
+            }
+          : video
+      )
+    );
+    saveToHistory('clearTranscript', `Cleared transcript for ${videoPath}`);
+  };
+
+  /**
+   * Set transcript generating state
+   * @param {string} videoPath - Path of the video
+   * @param {boolean} isGenerating - Whether transcription is in progress
+   */
+  const setTranscriptGenerating = (videoPath, isGenerating) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              transcript: {
+                ...(video.transcript || {
+                  segments: [],
+                  fullText: '',
+                  duration: 0,
+                  generatedAt: null,
+                }),
+                isGenerating,
+              },
+            }
+          : video
+      )
+    );
+  };
+
+  /**
+   * Set summary for a video
+   * @param {string} videoPath - Path of the video
+   * @param {Object} summaryData - Summary data with short, detailed, keyTopics
+   */
+  const setSummary = (videoPath, summaryData) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              summary: {
+                ...summaryData,
+                isGenerating: false,
+                generatedAt: summaryData.generatedAt || new Date().toISOString(),
+              },
+            }
+          : video
+      )
+    );
+    saveToHistory('setSummary', `Generated summary for ${videoPath}`);
+  };
+
+  /**
+   * Get summary for a video
+   * @param {string} videoPath - Path of the video
+   * @returns {Object|null} - Summary data or null
+   */
+  const getSummary = (videoPath) => {
+    const video = videos.find((v) => v.path === videoPath);
+    return video?.summary || null;
+  };
+
+  /**
+   * Clear summary for a video
+   * @param {string} videoPath - Path of the video
+   */
+  const clearSummary = (videoPath) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              summary: null,
+            }
+          : video
+      )
+    );
+    saveToHistory('clearSummary', `Cleared summary for ${videoPath}`);
+  };
+
+  /**
+   * Set summary generating state
+   * @param {string} videoPath - Path of the video
+   * @param {boolean} isGenerating - Whether summarization is in progress
+   */
+  const setSummaryGenerating = (videoPath, isGenerating) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              summary: {
+                ...(video.summary || {}),
+                isGenerating,
+              },
+            }
+          : video
+      )
+    );
+  };
+
+  /**
+   * Generate trim suggestions from transcript
+   * @param {string} videoPath - Path of the video
+   * @param {Object} options - Analysis options
+   */
+  const generateTrimSuggestions = async (videoPath, options = {}) => {
+    const video = videos.find((v) => v.path === videoPath);
+    if (!video || !video.transcript || !video.transcript.segments || video.transcript.segments.length === 0) {
+      console.warn('No transcript available for suggestion generation');
+      return [];
+    }
+
+    // Dynamic import to avoid circular dependencies
+    const { generateTrimSuggestions: genSuggestions } = await import('../utils/trimSuggestions');
+    const suggestions = genSuggestions(video.transcript, options);
+    
+    setVideos((prevVideos) =>
+      prevVideos.map((v) =>
+        v.path === videoPath
+          ? {
+              ...v,
+              trimSuggestions: suggestions,
+              suggestionsGenerated: true,
+            }
+          : v
+      )
+    );
+    
+    saveToHistory('generateTrimSuggestions', `Generated ${suggestions.length} trim suggestions`);
+    
+    return suggestions;
+  };
+
+  /**
+   * Get trim suggestions for a video
+   * @param {string} videoPath - Path of the video
+   * @returns {Array} - Array of trim suggestions
+   */
+  const getTrimSuggestions = (videoPath) => {
+    const video = videos.find((v) => v.path === videoPath);
+    return video?.trimSuggestions || [];
+  };
+
+  /**
+   * Clear suggestions for a video
+   * @param {string} videoPath - Path of the video
+   */
+  const clearSuggestions = (videoPath) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              trimSuggestions: [],
+              suggestionsGenerated: false,
+            }
+          : video
+      )
+    );
+    saveToHistory('clearSuggestions', `Cleared suggestions for ${videoPath}`);
+  };
+
+  /**
+   * Apply a trim suggestion to the video's trim points
+   * @param {string} videoPath - Path of the video
+   * @param {Object} suggestion - Suggestion object to apply
+   */
+  const applySuggestion = (videoPath, suggestion) => {
+    const video = videos.find((v) => v.path === videoPath);
+    if (!video) {
+      console.error('Video not found:', videoPath);
+      return;
+    }
+
+    // Get current trim points
+    const currentTrim = getTrimPoints(videoPath);
+    const currentInPoint = currentTrim.inPoint || 0;
+    const currentOutPoint = currentTrim.outPoint || video.duration;
+
+    if (suggestion.type === 'remove_silence' || suggestion.type === 'remove_filler') {
+      // For remove suggestions, we want to exclude this region
+      // This is a simplified approach - could be enhanced to actually cut out the region
+      // For now, if the silence/filler is at the start or end, adjust trim points
+      if (suggestion.startTime <= currentInPoint + 1) {
+        // Silence/filler at start - move in-point forward
+        setInPoint(videoPath, suggestion.endTime);
+      } else if (suggestion.endTime >= currentOutPoint - 1) {
+        // Silence/filler at end - move out-point backward
+        setOutPoint(videoPath, suggestion.startTime);
+      }
+      // Middle regions would require splitting, which is more complex
+    } else if (suggestion.type === 'create_highlight') {
+      // For highlight suggestions, set trim points to the suggested range
+      setInPoint(videoPath, suggestion.startTime);
+      setOutPoint(videoPath, suggestion.endTime);
+    }
+
+    saveToHistory('applySuggestion', `Applied ${suggestion.type} suggestion`);
+  };
+
   const value = {
     videos,
     selectedVideo,
@@ -660,6 +923,21 @@ export function VideoProvider({ children }) {
     // Video element reference
     setVideoElement,
     getVideoElement,
+    // Transcript management
+    setTranscript,
+    getTranscript,
+    clearTranscript,
+    setTranscriptGenerating,
+    // Summary management
+    setSummary,
+    getSummary,
+    clearSummary,
+    setSummaryGenerating,
+    // Trim suggestions
+    generateTrimSuggestions,
+    getTrimSuggestions,
+    clearSuggestions,
+    applySuggestion,
   };
 
   return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;

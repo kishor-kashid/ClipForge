@@ -21,8 +21,6 @@ export const useKeyboardShortcuts = () => {
     pauseVideo,
     setTrimIn,
     setTrimOut,
-    addVideo,
-    removeVideo,
     selectedClip,
     setSelectedClip,
     tracks,
@@ -32,6 +30,7 @@ export const useKeyboardShortcuts = () => {
     redo,
     canUndo,
     canRedo,
+    removeClipFromTrack,
   } = useVideoStore();
 
   const handleKeyDown = (event) => {
@@ -59,8 +58,7 @@ export const useKeyboardShortcuts = () => {
         // I: Set In Point
         event.preventDefault();
         if (selectedVideo && currentTime !== null) {
-          setInPoint(selectedVideo, currentTime);
-          console.log(`In point set to ${currentTime}s`);
+          setTrimIn(selectedVideo, currentTime);
         }
         break;
 
@@ -69,8 +67,7 @@ export const useKeyboardShortcuts = () => {
         // O: Set Out Point
         event.preventDefault();
         if (selectedVideo && currentTime !== null) {
-          setOutPoint(selectedVideo, currentTime);
-          console.log(`Out point set to ${currentTime}s`);
+          setTrimOut(selectedVideo, currentTime);
         }
         break;
 
@@ -83,7 +80,6 @@ export const useKeyboardShortcuts = () => {
             const track = tracks.find(t => t.clips.some(c => c.id === selectedClip.id));
             if (track) {
               splitClip(selectedClip.videoPath, currentTime);
-              console.log(`Clip split at ${currentTime}s`);
             }
           }
         }
@@ -92,7 +88,6 @@ export const useKeyboardShortcuts = () => {
           event.preventDefault();
           if (selectedVideo) {
             exportVideo();
-            console.log('Quick export triggered');
           }
         }
         break;
@@ -102,9 +97,11 @@ export const useKeyboardShortcuts = () => {
         // Delete: Remove selected clip
         event.preventDefault();
         if (selectedClip) {
-          removeVideo(selectedClip.videoPath);
-          setSelectedClip(null);
-          console.log('Selected clip removed');
+          const track = tracks.find(t => t.clips.some(c => c.id === selectedClip.id));
+          if (track) {
+            removeClipFromTrack(track.id, selectedClip.id);
+            setSelectedClip(null);
+          }
         }
         break;
 
@@ -115,7 +112,6 @@ export const useKeyboardShortcuts = () => {
           event.preventDefault();
           if (canUndo()) {
             undo();
-            console.log('Undo executed');
           }
         }
         break;
@@ -127,7 +123,6 @@ export const useKeyboardShortcuts = () => {
           event.preventDefault();
           if (canRedo()) {
             redo();
-            console.log('Redo executed');
           }
         }
         break;

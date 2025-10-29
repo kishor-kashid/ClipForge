@@ -31,5 +31,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Recording APIs
   getScreenSources: () => ipcRenderer.invoke('recording:getScreenSources'),
   saveRecording: (buffer, extension) => ipcRenderer.invoke('recording:save', buffer, extension),
+  
+  // AI Transcription API
+  aiTranscribe: (videoPath) => ipcRenderer.invoke('ai:transcribe', videoPath),
+  
+  // AI Summarization API
+  aiSummarize: (transcriptText) => ipcRenderer.invoke('ai:summarize', transcriptText),
 });
 
