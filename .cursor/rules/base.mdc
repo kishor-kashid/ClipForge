@@ -1,0 +1,85 @@
+Description: Core ClipForge project rules and patterns
+Globs: **/*
+
+## Project Overview
+ClipForge is a complete desktop video editor (all 20 PRs finished). Built with Electron, React, FFmpeg.
+
+## Critical Architecture Rules
+
+### Electron Process Separation
+- **Main Process** (`electron/main.js`): Handles file system, FFmpeg, IPC handlers
+- **Renderer Process** (`src/`): React UI components only
+- **IPC Communication**: ALWAYS use context bridge via `preload.js` - never direct Node.js access from renderer
+- **File Operations**: All file system access MUST go through IPC handlers in main process
+
+### State Management
+- Use React Context API (`src/store/videoStore.jsx`) - simple, no external dependencies
+- Custom hook: `useVideoStore()` for component access
+- History management: 50-action limit with cleanup
+
+### Component Patterns
+- Components: PascalCase (VideoPlayer.jsx)
+- Utilities: camelCase (fileUtils.js)
+- Always use Tailwind CSS for styling (no custom CSS files)
+- Always wrap components that use toast in `<ToastProvider>`
+
+## IPC Pattern (CRITICAL)
+```javascript
+// preload.js - expose API
+contextBridge.exposeInMainWorld('electronAPI', { ... });
+
+// renderer - use API
+await window.electronAPI.methodName();
+
+// main.js - handle IPC
+ipcMain.handle('channel:name', async (event, ...args) => { ... });
+```
+
+## FFmpeg Integration
+- Use `ffmpeg-static` for bundled binary
+- Use `fluent-ffmpeg` wrapper
+- Filter-free approach for timeline export (eliminates network errors)
+- Parallel processing for multi-clip exports (2-5x speed improvement)
+- Progress tracking: FFmpeg events + fallback timer
+
+## Testing Requirements
+- All tests use Vitest with jsdom environment
+- Unit tests: Pure functions only (fileUtils, timeUtils)
+- Integration tests: Component workflows
+- Wrap components in `<ToastProvider>` for tests that trigger toasts
+- 69 tests total, all passing - maintain 100% pass rate
+
+## File Organization
+- `electron/` - Main process only
+- `src/components/` - React components
+- `src/utils/` - Pure utility functions
+- `src/store/` - State management
+- `tests/unit/` - Fast isolated tests
+- `tests/integration/` - Component interaction tests
+
+## Recording Features
+- Screen: `desktopCapturer` API
+- Webcam: `getUserMedia` API
+- PiP: Canvas compositing with `requestAnimationFrame`
+- Always clean up MediaStreams in useEffect cleanup
+- Blob → Uint8Array → IPC for saving recordings
+
+## Timeline Features
+- Multi-track state: `tracks` array in store
+- Drag-drop: Calculate position from mouse coordinates
+- Split clips: Maintain `originalPath` reference
+- Effective duration: Calculate from trim points (inPoint/outPoint)
+- Timeline export: Filter-free FFmpeg with parallel processing
+
+## Error Handling
+- Always wrap critical operations in try-catch
+- Show user-friendly error messages (not stack traces)
+- Use toast notifications for user feedback
+- Validate inputs before operations (fail fast)
+
+## Build & Package
+- `npm run dev` - Development (Vite + Electron)
+- `npm run build` - Build React app
+- `npm run electron:build` - Create Windows installer
+- Electron in devDependencies (required by electron-builder)
+- webSecurity: false required for local file access

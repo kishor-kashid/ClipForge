@@ -3,6 +3,7 @@ import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
 
 export default function TrimControls() {
+  const [isOpen, setIsOpen] = useState(true);
   const { selectedVideo, getSelectedVideoObject, setInPoint, setOutPoint, getTrimPoints, getVideoElement } = useVideoStore();
   const [error, setError] = useState(null);
   const videoPlayerRef = useRef(null);
@@ -88,81 +89,101 @@ export default function TrimControls() {
     setError(null);
   };
 
-  // No video selected
-  if (!selectedVideoObject) {
-    return (
-      <div className="bg-[#252525] rounded-lg border border-[#404040] p-6 text-center">
-        <p className="text-[#b3b3b3]">Select a video to set trim points</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-[#252525] rounded-lg border border-[#404040] p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-white">Trim Controls</h2>
-        <span className="text-xs text-[#b3b3b3] truncate max-w-[140px]">
-          {selectedVideoObject.name}
-        </span>
-      </div>
-
-      {/* Current Trim Points */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="bg-[#1e3a5f] rounded p-3 border border-[#2563eb]">
-          <p className="text-xs font-semibold text-[#60a5fa] mb-1">In-Point</p>
-          <p className="text-lg font-bold text-[#93c5fd]">
-            {formatTime(inPoint)}
-          </p>
+    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden">
+      {/* Trim Controls Header */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 bg-[#2d2d2d] hover:bg-[#333] transition-colors flex items-center justify-between text-left"
+      >
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-[#4a9eff]" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+          <span className="text-white font-semibold">Trim Controls</span>
+          {selectedVideoObject && (
+            <span className="text-xs text-[#b3b3b3] truncate max-w-[140px] ml-2">
+              {selectedVideoObject.name}
+            </span>
+          )}
         </div>
-        
-        <div className="bg-[#1a3a2e] rounded p-3 border border-[#16a34a]">
-          <p className="text-xs font-semibold text-[#4ade80] mb-1">Out-Point</p>
-          <p className="text-lg font-bold text-[#86efac]">
-            {outPoint !== null && outPoint !== undefined ? formatTime(outPoint) : '--:--'}
-          </p>
-        </div>
-        
-        <div className="bg-[#2d1b4e] rounded p-3 border border-[#9333ea]">
-          <p className="text-xs font-semibold text-[#a78bfa] mb-1">Duration</p>
-          <p className="text-lg font-bold text-[#c4b5fd]">
-            {trimDuration !== null ? formatTime(trimDuration) : '--:--'}
-          </p>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="space-y-2 mb-3">
-        <button
-          onClick={handleSetInPoint}
-          className="w-full px-4 py-2 bg-[#2563eb] text-white rounded hover:bg-[#1d4ed8] transition-colors font-medium text-sm"
+        <svg 
+          className={`w-5 h-5 text-[#b3b3b3] transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          fill="currentColor" 
+          viewBox="0 0 20 20"
         >
-          Set In Point
-        </button>
-        
-        <button
-          onClick={handleSetOutPoint}
-          className="w-full px-4 py-2 bg-[#16a34a] text-white rounded hover:bg-[#15803d] transition-colors font-medium text-sm"
-        >
-          Set Out Point
-        </button>
-        
-        <button
-          onClick={handleClearTrim}
-          className="w-full px-4 py-2 bg-[#404040] text-white rounded hover:bg-[#525252] transition-colors font-medium text-sm"
-        >
-          Clear Trim
-        </button>
-      </div>
+          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
 
-      {/* Instructions */}
-      <div className="text-xs text-[#b3b3b3] bg-[#2d2d2d] rounded p-2">
-        <p>Play video to mark start and end points</p>
-      </div>
+      {/* Trim Controls Content */}
+      {isOpen && (
+        <div className="p-4">
+          {!selectedVideoObject ? (
+            <p className="text-[#b3b3b3] text-sm text-center py-4">Select a video to set trim points</p>
+          ) : (
+            <>
+              {/* Current Trim Points */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-[#1e3a5f] rounded p-3 border border-[#2563eb]">
+                  <p className="text-xs font-semibold text-[#60a5fa] mb-1">In-Point</p>
+                  <p className="text-lg font-bold text-[#93c5fd]">
+                    {formatTime(inPoint)}
+                  </p>
+                </div>
+                
+                <div className="bg-[#1a3a2e] rounded p-3 border border-[#16a34a]">
+                  <p className="text-xs font-semibold text-[#4ade80] mb-1">Out-Point</p>
+                  <p className="text-lg font-bold text-[#86efac]">
+                    {outPoint !== null && outPoint !== undefined ? formatTime(outPoint) : '--:--'}
+                  </p>
+                </div>
+                
+                <div className="bg-[#2d1b4e] rounded p-3 border border-[#9333ea]">
+                  <p className="text-xs font-semibold text-[#a78bfa] mb-1">Duration</p>
+                  <p className="text-lg font-bold text-[#c4b5fd]">
+                    {trimDuration !== null ? formatTime(trimDuration) : '--:--'}
+                  </p>
+                </div>
+              </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="mt-3 bg-red-900 bg-opacity-20 border border-red-500 text-red-300 px-3 py-2 rounded text-sm">
-          {error}
+              {/* Controls */}
+              <div className="space-y-2 mb-3">
+                <button
+                  onClick={handleSetInPoint}
+                  className="w-full px-4 py-2 bg-[#2563eb] text-white rounded hover:bg-[#1d4ed8] transition-colors font-medium text-sm"
+                >
+                  Set In Point
+                </button>
+                
+                <button
+                  onClick={handleSetOutPoint}
+                  className="w-full px-4 py-2 bg-[#16a34a] text-white rounded hover:bg-[#15803d] transition-colors font-medium text-sm"
+                >
+                  Set Out Point
+                </button>
+                
+                <button
+                  onClick={handleClearTrim}
+                  className="w-full px-4 py-2 bg-[#404040] text-white rounded hover:bg-[#525252] transition-colors font-medium text-sm"
+                >
+                  Clear Trim
+                </button>
+              </div>
+
+              {/* Instructions */}
+              <div className="text-xs text-[#b3b3b3] bg-[#2d2d2d] rounded p-2">
+                <p>Play video to mark start and end points</p>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="mt-3 bg-red-900 bg-opacity-20 border border-red-500 text-red-300 px-3 py-2 rounded text-sm">
+                  {error}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

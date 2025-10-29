@@ -1,0 +1,118 @@
+Description: Electron-specific patterns and best practices
+Globs: electron/**/*, src/**/*
+
+## IPC Communication Pattern
+
+### Always Use Context Bridge
+```javascript
+// ❌ NEVER do this in renderer:
+const fs = require('fs');
+fs.readFile(...);
+
+// ✅ ALWAYS do this:
+await window.electronAPI.readFile(...);
+```
+
+### IPC Handler Structure
+```javascript
+// main.js
+ipcMain.handle('feature:action', async (event, param1, param2) => {
+  try {
+    // Validate inputs
+    // Perform operation
+    // Return result
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// preload.js
+contextBridge.exposeInMainWorld('electronAPI', {
+  featureAction: (param1, param2) => 
+    ipcRenderer.invoke('feature:action', param1, param2)
+});
+
+// renderer
+const result = await window.electronAPI.featureAction(param1, param2);
+```
+
+## File System Access Rules
+
+1. **Renderer Process**: No direct file system access
+2. **Main Process**: All file operations
+3. **Validation**: Always validate file paths in main process
+4. **Error Handling**: Return structured errors via IPC
+
+## FFmpeg Integration Rules
+
+### Export Pattern
+```javascript
+// electron/ffmpeg.js
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegPath from 'ffmpeg-static';
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+// Use filter-free approach for timeline export
+ffmpeg(inputPath)
+  .inputOptions(['-ss', startTime, '-t', duration]) // NO .setStartTime()
+  .outputOptions(['-preset ultrafast', '-crf 23'])
+  .size('1280x720') // Direct output option
+  .on('progress', (progress) => {
+    // Send progress via IPC
+  })
+  .on('end', () => {
+    // Success
+  })
+  .on('error', (error) => {
+    // Error handling
+  });
+```
+
+### Progress Tracking
+- Use FFmpeg progress events
+- Always include fallback timer for reliability
+- Send updates via IPC to renderer
+
+## Window Management
+
+### Development vs Production
+```javascript
+const isDev = !app.isPackaged;
+const indexPath = isDev 
+  ? 'http://localhost:5173'
+  : path.join(__dirname, '../dist/index.html');
+```
+
+### BrowserWindow Config
+```javascript
+webPreferences: {
+  preload: path.join(__dirname, 'preload.js'),
+  contextIsolation: true, // REQUIRED
+  nodeIntegration: false, // REQUIRED
+  webSecurity: false // Required for local file access
+}
+```
+
+## Media Stream Handling
+
+### Recording Cleanup (CRITICAL)
+```javascript
+useEffect(() => {
+  const stream = // get stream
+  
+  return () => {
+    // ALWAYS clean up streams
+    stream.getTracks().forEach(track => track.stop());
+  };
+}, []);
+```
+
+### Blob to IPC Transfer
+```javascript
+// Convert Blob to Uint8Array for IPC
+const arrayBuffer = await blob.arrayBuffer();
+const uint8Array = new Uint8Array(arrayBuffer);
+await window.electronAPI.saveRecording(uint8Array);
+```

@@ -85,6 +85,13 @@ export function VideoProvider({ children }) {
         id: Date.now().toString(),
         addedAt: new Date().toISOString(),
         isRecording: video.isRecording || false,
+        transcript: video.transcript || {
+          segments: [],
+          fullText: '',
+          duration: 0,
+          generatedAt: null,
+          isGenerating: false
+        },
       }];
     });
     
@@ -603,6 +610,89 @@ export function VideoProvider({ children }) {
     return videoElementRef;
   };
 
+  /**
+   * Set transcript for a video
+   * @param {string} videoPath - Path of the video
+   * @param {Object} transcriptData - Transcript data with segments, fullText, duration
+   */
+  const setTranscript = (videoPath, transcriptData) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              transcript: {
+                ...transcriptData,
+                isGenerating: false,
+                generatedAt: transcriptData.generatedAt || new Date().toISOString(),
+              },
+            }
+          : video
+      )
+    );
+    saveToHistory('setTranscript', `Generated transcript for ${videoPath}`);
+  };
+
+  /**
+   * Get transcript for a video
+   * @param {string} videoPath - Path of the video
+   * @returns {Object|null} - Transcript data or null
+   */
+  const getTranscript = (videoPath) => {
+    const video = videos.find((v) => v.path === videoPath);
+    return video?.transcript || null;
+  };
+
+  /**
+   * Clear transcript for a video
+   * @param {string} videoPath - Path of the video
+   */
+  const clearTranscript = (videoPath) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              transcript: {
+                segments: [],
+                fullText: '',
+                duration: 0,
+                generatedAt: null,
+                isGenerating: false,
+              },
+            }
+          : video
+      )
+    );
+    saveToHistory('clearTranscript', `Cleared transcript for ${videoPath}`);
+  };
+
+  /**
+   * Set transcript generating state
+   * @param {string} videoPath - Path of the video
+   * @param {boolean} isGenerating - Whether transcription is in progress
+   */
+  const setTranscriptGenerating = (videoPath, isGenerating) => {
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.path === videoPath
+          ? {
+              ...video,
+              transcript: {
+                ...(video.transcript || {
+                  segments: [],
+                  fullText: '',
+                  duration: 0,
+                  generatedAt: null,
+                }),
+                isGenerating,
+              },
+            }
+          : video
+      )
+    );
+  };
+
   const value = {
     videos,
     selectedVideo,
@@ -660,6 +750,11 @@ export function VideoProvider({ children }) {
     // Video element reference
     setVideoElement,
     getVideoElement,
+    // Transcript management
+    setTranscript,
+    getTranscript,
+    clearTranscript,
+    setTranscriptGenerating,
   };
 
   return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;
