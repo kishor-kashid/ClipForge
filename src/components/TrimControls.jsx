@@ -113,25 +113,27 @@ export default function TrimControls() {
   };
 
   return (
-    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden">
+    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden shadow-lg shadow-black/20">
       {/* Trim Controls Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-[#2d2d2d] hover:bg-[#333] transition-colors flex items-center justify-between text-left"
+        className="w-full px-5 py-3.5 bg-[#2d2d2d] hover:bg-[#333] transition-colors flex items-center justify-between text-left border-b border-[#404040]"
       >
-        <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-[#4a9eff]" fill="currentColor" viewBox="0 0 20 20">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <svg className="w-5 h-5 text-[#4a9eff] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
           </svg>
-          <span className="text-white font-semibold">Trim Controls</span>
-          {selectedVideoObject && (
-            <span className="text-xs text-[#b3b3b3] truncate max-w-[140px] ml-2">
-              {selectedVideoObject.name}
-            </span>
-          )}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-white font-semibold text-sm">Trim Controls</span>
+            {selectedVideoObject && (
+              <span className="text-xs text-[#888888] truncate">
+                {selectedVideoObject.name}
+              </span>
+            )}
+          </div>
         </div>
         <svg 
-          className={`w-5 h-5 text-[#b3b3b3] transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          className={`w-5 h-5 text-[#b3b3b3] transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} 
           fill="currentColor" 
           viewBox="0 0 20 20"
         >
@@ -141,7 +143,7 @@ export default function TrimControls() {
 
       {/* Trim Controls Content */}
       {isOpen && (
-        <div className="p-4">
+        <div className="p-5 space-y-4">
           {!selectedVideoObject ? (
             <p className="text-[#b3b3b3] text-sm text-center py-4">Select a video to set trim points</p>
           ) : (
@@ -171,24 +173,24 @@ export default function TrimControls() {
               </div>
 
               {/* Controls */}
-              <div className="space-y-2 mb-3">
+              <div className="space-y-2">
                 <button
                   onClick={handleSetInPoint}
-                  className="w-full px-4 py-2 bg-[#2563eb] text-white rounded hover:bg-[#1d4ed8] transition-colors font-medium text-sm"
+                  className="btn btn-primary w-full"
                 >
                   Set In Point
                 </button>
                 
                 <button
                   onClick={handleSetOutPoint}
-                  className="w-full px-4 py-2 bg-[#16a34a] text-white rounded hover:bg-[#15803d] transition-colors font-medium text-sm"
+                  className="btn btn-success w-full"
                 >
                   Set Out Point
                 </button>
                 
                 <button
                   onClick={handleClearTrim}
-                  className="w-full px-4 py-2 bg-[#404040] text-white rounded hover:bg-[#525252] transition-colors font-medium text-sm"
+                  className="btn btn-secondary w-full"
                 >
                   Clear Trim
                 </button>

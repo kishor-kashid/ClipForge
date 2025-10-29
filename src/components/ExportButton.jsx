@@ -163,20 +163,20 @@ export default function ExportButton() {
   };
 
   return (
-    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden">
+    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden shadow-lg shadow-black/20">
       {/* Export Panel Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-[#2d2d2d] hover:bg-[#333] transition-colors flex items-center justify-between text-left"
+        className="w-full px-5 py-3.5 bg-[#2d2d2d] hover:bg-[#333] transition-colors flex items-center justify-between text-left border-b border-[#404040]"
       >
-        <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-[#4ade80]" fill="currentColor" viewBox="0 0 20 20">
+        <div className="flex items-center gap-3">
+          <svg className="w-5 h-5 text-[#10b981]" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
           </svg>
-          <span className="text-white font-semibold">Export</span>
+          <span className="text-white font-semibold text-sm">Export</span>
         </div>
         <svg 
-          className={`w-5 h-5 text-[#b3b3b3] transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          className={`w-5 h-5 text-[#b3b3b3] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
           fill="currentColor" 
           viewBox="0 0 20 20"
         >
@@ -186,20 +186,20 @@ export default function ExportButton() {
 
       {/* Export Panel Content */}
       {isOpen && (
-        <div className="p-4">
+        <div className="p-5 space-y-4">
           {!selectedVideoObject ? (
             <p className="text-[#b3b3b3] text-sm text-center py-4">Select a video to export</p>
           ) : (
             <>
               {/* Status Message */}
               {status === 'success' && (
-                <div className="mb-4 p-3 bg-green-900 bg-opacity-20 border border-green-500 text-green-300 rounded text-sm">
+                <div className="p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg text-[#10b981] text-sm">
                   ✓ Export completed successfully!
                 </div>
               )}
 
               {status === 'error' && errorMessage && (
-                <div className="mb-4 p-3 bg-red-900 bg-opacity-20 border border-red-500 text-red-300 rounded text-sm">
+                <div className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg text-[#ef4444] text-sm">
                   ✗ {errorMessage}
                 </div>
               )}
@@ -225,11 +225,11 @@ export default function ExportButton() {
                 <div className="mb-4 space-y-3">
                   {/* Resolution */}
                   <div>
-                    <label className="block text-sm text-[#b3b3b3] mb-1">Resolution:</label>
+                    <label className="block text-xs text-[#b3b3b3] font-semibold uppercase tracking-wide mb-2">Resolution:</label>
                     <select
                       value={resolution}
                       onChange={(e) => setResolution(e.target.value)}
-                      className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+                      className="w-full"
                     >
                       <option value="source">Source (Original)</option>
                       <option value="720p">720p (1280x720)</option>
@@ -240,11 +240,11 @@ export default function ExportButton() {
 
                   {/* Quality */}
                   <div>
-                    <label className="block text-sm text-[#b3b3b3] mb-1">Quality:</label>
+                    <label className="block text-xs text-[#b3b3b3] font-semibold uppercase tracking-wide mb-2">Quality:</label>
                     <select
                       value={quality}
                       onChange={(e) => setQuality(e.target.value)}
-                      className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+                      className="w-full"
                     >
                       <option value="fast">Fast (Lower quality, smaller file)</option>
                       <option value="medium">Medium (Balanced)</option>
@@ -254,11 +254,11 @@ export default function ExportButton() {
 
                   {/* Format */}
                   <div>
-                    <label className="block text-sm text-[#b3b3b3] mb-1">Format:</label>
+                    <label className="block text-xs text-[#b3b3b3] font-semibold uppercase tracking-wide mb-2">Format:</label>
                     <select
                       value={format}
                       onChange={(e) => setFormat(e.target.value)}
-                      className="w-full bg-[#1a1a1a] border border-[#404040] text-white px-3 py-2 rounded text-sm"
+                      className="w-full"
                     >
                       <option value="mp4-h264">MP4 (H.264)</option>
                       <option value="mp4-h265">MP4 (H.265)</option>
@@ -267,8 +267,8 @@ export default function ExportButton() {
                   </div>
 
                   {/* File size estimate */}
-                  <div className="text-xs text-[#b3b3b3] bg-[#1a1a1a] p-2 rounded">
-                    <p>Estimated file size: {getEstimatedFileSize()}</p>
+                  <div className="text-xs text-[#b3b3b3] bg-[#1a1a1a] p-3 rounded-lg border border-[#404040]">
+                    <p className="font-medium">Estimated file size: <span className="text-white">{getEstimatedFileSize()}</span></p>
                   </div>
                 </div>
               )}
@@ -277,11 +277,7 @@ export default function ExportButton() {
               <button
                 onClick={handleExport}
                 disabled={isExporting || shouldDisable}
-                className={`w-full px-4 py-3 rounded-lg font-semibold text-base transition-all ${
-                  isExporting || shouldDisable
-                    ? 'bg-[#404040] text-[#666] cursor-not-allowed'
-                    : 'bg-[#16a34a] text-white hover:bg-[#15803d]'
-                }`}
+                className={`btn w-full ${isExporting || shouldDisable ? 'btn-secondary' : 'btn-success'}`}
               >
                 {isExporting ? (
                   <span className="flex items-center justify-center gap-2">

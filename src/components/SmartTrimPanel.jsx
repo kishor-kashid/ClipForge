@@ -125,25 +125,25 @@ export default function SmartTrimPanel() {
 
 
   return (
-    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden">
+    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden shadow-lg shadow-black/20">
       {/* Smart Trim Panel Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-[#2d2d2d] hover:bg-[#333] transition-colors flex items-center justify-between text-left"
+        className="w-full px-5 py-3.5 bg-[#2d2d2d] hover:bg-[#333] transition-colors flex items-center justify-between text-left border-b border-[#404040]"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <svg className="w-5 h-5 text-[#4a9eff]" fill="currentColor" viewBox="0 0 20 20">
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
-          <span className="text-white font-semibold">Highlights</span>
+          <span className="text-white font-semibold text-sm">Highlights</span>
           {highlightSuggestions.length > 0 && (
-            <span className="text-xs text-[#4a9eff] bg-[#4a9eff]/20 px-2 py-0.5 rounded">
+            <span className="text-xs font-medium text-[#4a9eff] bg-[#4a9eff]/20 px-2 py-0.5 rounded-full">
               {highlightSuggestions.length}
             </span>
           )}
         </div>
         <svg 
-          className={`w-5 h-5 text-[#b3b3b3] transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          className={`w-5 h-5 text-[#b3b3b3] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
           fill="currentColor" 
           viewBox="0 0 20 20"
         >
@@ -153,49 +153,47 @@ export default function SmartTrimPanel() {
 
       {/* Smart Trim Panel Content */}
       {isOpen && (
-        <div className="p-4">
+        <div className="p-5 space-y-4">
           {!selectedVideo ? (
             <p className="text-[#b3b3b3] text-sm text-center py-4">Select a video to find highlights</p>
           ) : !hasTranscript ? (
             <div className="text-center py-4">
-              <p className="text-[#b3b3b3] text-sm mb-2">Generate a transcript first to find highlights</p>
+              <p className="text-[#b3b3b3] text-sm">Generate a transcript first to find highlights</p>
             </div>
           ) : (
             <>
               {/* Configuration */}
-              <div className="mb-4 bg-[#1a1a1a] rounded p-3 border border-[#404040]">
-                <div>
-                  <label className="text-xs text-[#b3b3b3] mb-1 block">
-                    Min Confidence: {Math.round(minConfidence * 100)}%
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={minConfidence}
-                    onChange={(e) => setMinConfidence(parseFloat(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
+              <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#404040]">
+                <label className="text-xs text-[#b3b3b3] font-semibold uppercase tracking-wide mb-3 block">
+                  Min Confidence: {Math.round(minConfidence * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={minConfidence}
+                  onChange={(e) => setMinConfidence(parseFloat(e.target.value))}
+                  className="w-full"
+                />
               </div>
 
               {/* Actions */}
-              <div className="mb-4 space-y-2">
+              <div className="space-y-3">
                 {!suggestionsGenerated && (
                   <button
                     onClick={handleGenerateSuggestions}
-                    className="w-full px-4 py-2 bg-[#4a9eff] text-white rounded hover:bg-[#3080df] transition-colors font-medium text-sm"
+                    className="btn btn-primary w-full"
                   >
                     Find Highlights
                   </button>
                 )}
 
                 {suggestionsGenerated && highlightSuggestions.length > 0 && (
-                  <>
+                  <div className="space-y-2">
                     <button
                       onClick={handleApplyAll}
-                      className="w-full px-4 py-2 bg-[#16a34a] text-white rounded hover:bg-[#15803d] transition-colors font-medium text-sm mb-2"
+                      className="btn btn-success w-full"
                     >
                       Apply Best Highlight
                     </button>
@@ -204,50 +202,50 @@ export default function SmartTrimPanel() {
                         clearSuggestions(selectedVideo);
                         addToast('Suggestions cleared', 'info');
                       }}
-                      className="w-full px-4 py-2 bg-[#404040] text-white rounded hover:bg-[#525252] transition-colors font-medium text-sm"
+                      className="btn btn-secondary w-full"
                     >
                       Clear
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
 
               {/* Highlights List */}
               {suggestionsGenerated && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {highlightSuggestions.length === 0 ? (
                     <p className="text-[#b3b3b3] text-sm text-center py-4">
                       No highlights found (try lowering confidence threshold)
                     </p>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {highlightSuggestions.map((suggestion, index) => (
                         <div
                           key={index}
-                          className="bg-[#1a1a1a] rounded p-3 border border-[#404040]"
+                          className="bg-[#1a1a1a] rounded-lg p-4 border border-[#404040] hover:border-[#4a9eff]/30 transition-colors"
                         >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-[#4a9eff] font-mono">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-mono text-[#4a9eff] font-medium">
                                 {formatTime(suggestion.startTime)} - {formatTime(suggestion.endTime)}
                               </span>
-                              <span className="text-xs text-[#b3b3b3]">
+                              <span className="text-xs text-[#888888]">
                                 ({formatTime(suggestion.duration)})
                               </span>
                             </div>
                             {getConfidenceIndicator(suggestion.confidence)}
                           </div>
-                          <p className="text-xs text-[#b3b3b3] mb-2">{suggestion.reason}</p>
+                          <p className="text-xs text-[#b3b3b3] mb-3 leading-relaxed">{suggestion.reason}</p>
                           <div className="flex gap-2">
                             <button
                               onClick={() => handlePreviewSuggestion(suggestion)}
-                              className="px-3 py-1 text-xs bg-[#404040] hover:bg-[#505050] text-white rounded transition-colors"
+                              className="btn btn-secondary btn-sm flex-1"
                             >
                               Preview
                             </button>
                             <button
                               onClick={() => handleApplySuggestion(suggestion)}
-                              className="px-3 py-1 text-xs bg-[#16a34a] hover:bg-[#15803d] text-white rounded transition-colors"
+                              className="btn btn-success btn-sm flex-1"
                             >
                               Apply
                             </button>

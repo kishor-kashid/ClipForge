@@ -6,7 +6,7 @@ import SmartTrimPanel from './SmartTrimPanel';
 
 export default function EditExportPanel() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <TranscriptionPanel />
       <SmartTrimPanel />
       <TrimControls />

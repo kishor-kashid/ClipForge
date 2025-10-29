@@ -85,20 +85,20 @@ export default function TranscriptionPanel() {
   };
 
   return (
-    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden">
+    <div className="bg-[#252525] rounded-lg border border-[#404040] overflow-hidden shadow-lg shadow-black/20">
       {/* Transcription Panel Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-[#2d2d2d] hover:bg-[#333] transition-colors flex items-center justify-between text-left"
+        className="w-full px-5 py-3.5 bg-[#2d2d2d] hover:bg-[#333] transition-colors flex items-center justify-between text-left border-b border-[#404040]"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <svg className="w-5 h-5 text-[#4a9eff]" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
           </svg>
-          <span className="text-white font-semibold">Transcription</span>
+          <span className="text-white font-semibold text-sm">Transcription</span>
         </div>
         <svg 
-          className={`w-5 h-5 text-[#b3b3b3] transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          className={`w-5 h-5 text-[#b3b3b3] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
           fill="currentColor" 
           viewBox="0 0 20 20"
         >
@@ -108,81 +108,80 @@ export default function TranscriptionPanel() {
       
       {/* Transcription Panel Content */}
       {isOpen && (
-        <div className="p-4">
+        <div className="p-5 space-y-4">
           {!selectedVideo ? (
-            <p className="text-gray-400 text-sm">Select a video to generate a transcript</p>
+            <p className="text-[#b3b3b3] text-sm text-center py-4">Select a video to generate a transcript</p>
           ) : (
             <>
-              {/* Header with Copy Button */}
-              <div className="flex items-center justify-between mb-4">
-                {hasTranscript && (
-                  <button
-                    onClick={handleCopyTranscript}
-                    className="px-3 py-1 text-sm bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
-                  >
-                    Copy Text
-                  </button>
-                )}
-              </div>
-
               {/* Status and Actions */}
-              <div className="mb-4 space-y-2">
+              <div className="space-y-3">
                 {!hasTranscript && !isGenerating && (
                   <button
                     onClick={handleGenerateTranscript}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn btn-primary w-full"
                   >
                     Generate Transcript
                   </button>
                 )}
 
                 {hasTranscript && !isGenerating && (
-                  <button
-                    onClick={handleRegenerateTranscript}
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
-                  >
-                    Regenerate Transcript
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCopyTranscript}
+                      className="btn btn-secondary flex-1"
+                    >
+                      Copy Text
+                    </button>
+                    <button
+                      onClick={handleRegenerateTranscript}
+                      className="btn btn-secondary flex-1"
+                    >
+                      Regenerate
+                    </button>
+                  </div>
                 )}
 
                 {isGenerating && (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <span className="ml-3 text-gray-400">Generating transcript...</span>
+                  <div className="flex items-center justify-center py-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#4a9eff] border-t-transparent"></div>
+                    <span className="ml-3 text-[#b3b3b3] text-sm">Generating transcript...</span>
                   </div>
                 )}
               </div>
 
               {/* Error State */}
               {transcript && !hasTranscript && !isGenerating && transcript.error && (
-                <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded text-red-300 text-sm">
+                <div className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg text-[#ef4444] text-sm">
                   {transcript.error}
                 </div>
               )}
 
               {/* Transcript Display */}
               {hasTranscript && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Metadata */}
-                  <div className="text-sm text-gray-400">
-                    {transcript.segments.length} segments • {formatTime(transcript.duration)} duration
+                  <div className="text-xs text-[#888888] flex items-center gap-2">
+                    <span>{transcript.segments.length} segments</span>
+                    <span>•</span>
+                    <span>{formatTime(transcript.duration)} duration</span>
                     {transcript.generatedAt && (
-                      <span className="ml-2">
-                        • Generated {new Date(transcript.generatedAt).toLocaleString()}
-                      </span>
+                      <>
+                        <span>•</span>
+                        <span>Generated {new Date(transcript.generatedAt).toLocaleString()}</span>
+                      </>
                     )}
                   </div>
 
                   {/* Full Transcript Text */}
-                  <div className="bg-gray-900 rounded p-3 max-h-60 overflow-y-auto">
-                    <p className="text-white text-sm whitespace-pre-wrap">{transcript.fullText}</p>
+                  <div className="bg-[#1a1a1a] rounded-lg p-4 max-h-64 overflow-y-auto border border-[#404040]">
+                    <p className="text-white text-sm whitespace-pre-wrap leading-relaxed">{transcript.fullText}</p>
                   </div>
                 </div>
               )}
 
               {/* Empty State */}
               {!hasTranscript && !isGenerating && !transcript?.error && (
-                <p className="text-gray-400 text-sm text-center py-4">
+                <p className="text-[#b3b3b3] text-sm text-center py-6">
                   Click "Generate Transcript" to transcribe the audio from this video
                 </p>
               )}
