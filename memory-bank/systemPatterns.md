@@ -60,9 +60,10 @@ App
   - `videoElementRef`: Reference to main video player
   - **AI Features**:
     - `transcript`: Transcript data with segments, fullText, duration, isGenerating (stored per video)
-    - `trimSuggestions`: Array of trim suggestions (silence, filler, highlights - stored per video)
-    - `suggestionsGenerated`: Boolean flag for suggestion generation status
-  - Methods: addVideo, removeVideo, updateVideo, selectVideo, setInPoint, setOutPoint, getTrimPoints, addClipToTrack, removeClipFromTrack, undo, redo, setTranscript, getTranscript, clearTranscript, setTranscriptGenerating, generateTrimSuggestions, getTrimSuggestions, clearSuggestions, applySuggestion
+  - `trimSuggestions`: Array of trim suggestions (silence, filler, highlights - stored per video)
+  - `suggestionsGenerated`: Boolean flag for suggestion generation status
+  - `playbackSpeed`: Playback speed stored in trimPoints per video (default 1.0)
+  - Methods: addVideo, removeVideo, updateVideo, selectVideo, setInPoint, setOutPoint, getTrimPoints, setPlaybackSpeed, getPlaybackSpeed, addClipToTrack, removeClipFromTrack, undo, redo, setTranscript, getTranscript, clearTranscript, setTranscriptGenerating, generateTrimSuggestions, getTrimSuggestions, clearSuggestions, applySuggestion
 
 #### Utility Layer - Complete Implementation
 - **fileUtils.js**: File validation, path handling
@@ -365,6 +366,47 @@ const getVideosInTimeline = () => {
 - Eliminate unused imports and dead code
 - Use React.useMemo for expensive calculations
 - Fix function naming inconsistencies
+
+### Playback Speed Implementation Pattern
+**Goal**: Control video playback speed (0.5x to 2.0x) with export support
+
+**State Management**:
+```javascript
+// Stored in trimPoints per video
+trimPoints[videoPath] = {
+  inPoint: 0,
+  outPoint: null,
+  playbackSpeed: 1.0  // Default speed
+};
+```
+
+**HTML5 Video Application**:
+```javascript
+// Apply speed directly to video element
+videoRef.current.playbackRate = speed;
+```
+
+**FFmpeg Export Implementation**:
+```javascript
+// Video speed filter: setpts adjusts presentation timestamps
+videoFilter = `setpts=${1.0 / speed}*PTS`;
+
+// Audio speed filter: atempo (chained for speeds outside 0.5-2.0)
+if (speed > 2.0) {
+  audioFilter = `atempo=2.0,atempo=${speed / 2.0}`;
+} else if (speed < 0.5) {
+  audioFilter = `atempo=0.5,atempo=${speed / 0.5}`;
+} else {
+  audioFilter = `atempo=${speed}`;
+}
+```
+
+**Key Features**:
+- Speed stored per video in trimPoints
+- Real-time preview during playback
+- Export preserves speed settings
+- Timeline export supports per-clip speeds
+- Audio filter chaining for extended range
 
 ## UI Layout & Interaction Patterns
 

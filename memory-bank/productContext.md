@@ -114,6 +114,7 @@ ClipForge provides a focused, desktop-based video editor with comprehensive feat
 - **AI Features**: Auto transcription with OpenAI Whisper API, highlights detection
 - **Layout Control**: Maximize video player, adjustable timeline height, panel resizing
 - **Design System**: Consistent styling, standardized buttons, professional appearance
+- **Playback Speed**: Real-time speed control (0.5x to 2.0x) with export support
 
 ## User Expectations
 
@@ -160,6 +161,7 @@ ClipForge provides a focused, desktop-based video editor with comprehensive feat
 | Focus mode | Maximize video player for distraction-free editing |
 | Customizable layout | Adjustable timeline height, panel widths |
 | AI-powered assistance | Auto transcription and highlight detection |
+| Playback speed control | Real-time speed adjustment (0.5x-2.0x) with export |
 
 **🎉 PROJECT COMPLETE - ALL USER NEEDS ADDRESSED**
 

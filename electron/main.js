@@ -92,7 +92,7 @@ ipcMain.handle('dialog:saveFile', async () => {
  */
 ipcMain.handle('export:video', async (event, params) => {
   try {
-    const { inputPath, outputPath, startTime, duration } = params;
+    const { inputPath, outputPath, startTime, duration, resolution, quality, format, playbackSpeed } = params;
 
     // Validate parameters
     if (!inputPath || !outputPath) {
@@ -101,7 +101,7 @@ ipcMain.handle('export:video', async (event, params) => {
 
     // Export video with progress updates
     const exportedPath = await exportVideo(
-      { inputPath, outputPath, startTime, duration },
+      { inputPath, outputPath, startTime, duration, resolution, quality, format, playbackSpeed },
       (percent) => {
         // Send progress updates to renderer
         mainWindow.webContents.send('export:progress', percent);
@@ -119,16 +119,24 @@ ipcMain.handle('export:video', async (event, params) => {
  */
 ipcMain.handle('export:timeline', async (event, params) => {
   try {
-    const { tracks, outputPath, videos } = params;
+    const { tracks, outputPath, videos, trimPoints } = params;
 
     // Validate parameters
     if (!tracks || !outputPath || !videos) {
       throw new Error('Tracks, output path, and videos are required');
     }
 
+    // Helper function to get playback speed from trim points
+    const getPlaybackSpeed = (videoPath) => {
+      if (!trimPoints || !trimPoints[videoPath]) {
+        return 1.0;
+      }
+      return trimPoints[videoPath].playbackSpeed || 1.0;
+    };
+
     // Export timeline with progress updates
     const exportedPath = await exportTimeline(
-      { tracks, outputPath, videos },
+      { tracks, outputPath, videos, getPlaybackSpeed },
       (percent) => {
         // Send progress updates to renderer
         mainWindow.webContents.send('export:progress', percent);

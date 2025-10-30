@@ -3,7 +3,7 @@ import { useVideoStore } from '../store/videoStore';
 import { formatTime } from '../utils/timeUtils';
 
 export default function VideoPlayer() {
-  const { selectedVideo, videos, updateVideo, splitClip, getTrimPoints, isRecording, recordingDuration, recordingStream, setVideoElement } = useVideoStore();
+  const { selectedVideo, videos, updateVideo, splitClip, getTrimPoints, getPlaybackSpeed, setPlaybackSpeed, isRecording, recordingDuration, recordingStream, setVideoElement } = useVideoStore();
   const videoRef = useRef(null);
   const recordingVideoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -36,6 +36,9 @@ export default function VideoPlayer() {
       
       if (videoSrc && videoRef.current) {
         videoRef.current.src = videoSrc;
+        // Apply playback speed when video loads
+        const speed = getPlaybackSpeed(selectedVideoObject.path);
+        videoRef.current.playbackRate = speed;
       }
       
       return () => {
@@ -44,7 +47,15 @@ export default function VideoPlayer() {
         }
       };
     }
-  }, [selectedVideoObject]);
+  }, [selectedVideoObject, getPlaybackSpeed]);
+  
+  // Apply playback speed when it changes
+  useEffect(() => {
+    if (videoRef.current && selectedVideoObject && !isRecording) {
+      const speed = getPlaybackSpeed(selectedVideoObject.path);
+      videoRef.current.playbackRate = speed;
+    }
+  }, [selectedVideoObject, getPlaybackSpeed, isRecording]);
 
   // Register video element with store for trim controls
   useEffect(() => {
@@ -124,6 +135,10 @@ export default function VideoPlayer() {
       const videoDuration = videoRef.current.duration;
       const trim = getTrimPoints(selectedVideoObject.path);
       
+      // Apply playback speed
+      const speed = getPlaybackSpeed(selectedVideoObject.path);
+      videoRef.current.playbackRate = speed;
+      
       // For split clips or trimmed clips, set the effective duration
       const effectiveStart = trim.inPoint || 0;
       const effectiveEnd = trim.outPoint || videoDuration;
@@ -141,6 +156,16 @@ export default function VideoPlayer() {
       if (selectedVideoObject && selectedVideoObject.path && (!selectedVideoObject.duration || selectedVideoObject.duration === 0)) {
         updateVideo(selectedVideoObject.path, { duration: videoDuration || 0 });
       }
+    }
+  };
+  
+  const handleSpeedChange = (e) => {
+    if (!selectedVideoObject) return;
+    const newSpeed = parseFloat(e.target.value);
+    setPlaybackSpeed(selectedVideoObject.path, newSpeed);
+    // Force re-application of speed to video element
+    if (videoRef.current) {
+      videoRef.current.playbackRate = newSpeed;
     }
   };
 
@@ -346,7 +371,7 @@ export default function VideoPlayer() {
 
         {/* Play Controls - Only show when not recording */}
         {!isRecording && selectedVideoObject && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={handlePlayPause}
               disabled={!!error}
@@ -368,6 +393,25 @@ export default function VideoPlayer() {
                 </>
               )}
             </button>
+            
+            {/* Playback Speed Control */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-[#b3b3b3] font-medium whitespace-nowrap">Speed:</label>
+              <select
+                value={String(getPlaybackSpeed(selectedVideoObject.path))}
+                onChange={handleSpeedChange}
+                disabled={!!error}
+                className="bg-[#1a1a1a] border border-[#404040] text-white text-sm px-3 py-1.5 rounded focus:outline-none focus:border-[#4a9eff] transition-colors"
+              >
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1">1.0x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="1.75">1.75x</option>
+                <option value="2">2.0x</option>
+              </select>
+            </div>
             
             <button
               onClick={handleSplit}

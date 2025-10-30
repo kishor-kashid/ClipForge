@@ -21,7 +21,7 @@ ffmpeg.setFfmpegPath(ffmpegPath);
  */
 function exportVideo(params, onProgress) {
   return new Promise((resolve, reject) => {
-    const { inputPath, outputPath, startTime, duration, resolution, quality, format } = params;
+    const { inputPath, outputPath, startTime, duration, resolution, quality, format, playbackSpeed } = params;
 
     try {
       let command = ffmpeg(inputPath);
@@ -35,6 +35,27 @@ function exportVideo(params, onProgress) {
         command = command.setDuration(duration);
       }
 
+      // Apply playback speed if specified (and not 1.0)
+      const speed = playbackSpeed || 1.0;
+      let videoFilter = null;
+      let audioFilter = null;
+      
+      if (speed !== 1.0) {
+        // Video speed: setpts=PTS/speed (faster = smaller PTS value)
+        videoFilter = `setpts=${1.0 / speed}*PTS`;
+        
+        // Audio speed: atempo (supports 0.5 to 2.0, chain multiple for speeds > 2.0)
+        if (speed > 2.0) {
+          // Chain two atempo filters for speeds > 2.0
+          audioFilter = `atempo=2.0,atempo=${speed / 2.0}`;
+        } else if (speed < 0.5) {
+          // Chain two atempo filters for speeds < 0.5
+          audioFilter = `atempo=0.5,atempo=${speed / 0.5}`;
+        } else {
+          audioFilter = `atempo=${speed}`;
+        }
+      }
+
       // Set resolution
       if (resolution && resolution !== 'source') {
         const resolutionMap = {
@@ -44,7 +65,12 @@ function exportVideo(params, onProgress) {
         };
         const scale = resolutionMap[resolution];
         if (scale) {
-          command = command.size(scale);
+          // Combine speed filter with scale if both are needed
+          if (videoFilter) {
+            videoFilter = `${videoFilter},scale=${scale}`;
+          } else {
+            command = command.size(scale);
+          }
         }
       }
 
@@ -80,6 +106,31 @@ function exportVideo(params, onProgress) {
           videoCodec = 'libx264';
           audioCodec = 'aac';
           outputOptions = [`-preset ${qualitySettings.preset}`, `-crf ${qualitySettings.crf}`];
+      }
+
+      // Build filter complex if speed is applied
+      if (videoFilter || audioFilter) {
+        let filterComplex = '';
+        
+        if (videoFilter && audioFilter) {
+          // Both video and audio filters
+          filterComplex = `[0:v]${videoFilter}[v];[0:a]${audioFilter}[a]`;
+          command = command
+            .complexFilter(filterComplex)
+            .outputOptions(['-map', '[v]', '-map', '[a]']);
+        } else if (videoFilter) {
+          // Only video filter
+          filterComplex = `[0:v]${videoFilter}[v]`;
+          command = command
+            .complexFilter(filterComplex)
+            .outputOptions(['-map', '[v]', '-map', '0:a']);
+        } else if (audioFilter) {
+          // Only audio filter
+          filterComplex = `[0:a]${audioFilter}[a]`;
+          command = command
+            .complexFilter(filterComplex)
+            .outputOptions(['-map', '0:v', '-map', '[a]']);
+        }
       }
 
       // Set output format and codec
@@ -122,7 +173,7 @@ function exportVideo(params, onProgress) {
  */
 function exportTimeline(params, onProgress) {
   return new Promise(async (resolve, reject) => {
-    const { tracks, outputPath, videos } = params;
+    const { tracks, outputPath, videos, getPlaybackSpeed } = params;
 
     try {
       // Collect all clips from all tracks sorted by start time
@@ -131,10 +182,14 @@ function exportTimeline(params, onProgress) {
         track.clips.forEach((clip) => {
           const video = videos[clip.videoPath];
           if (video) {
+            // Get playback speed for this clip (stored in video's trim points)
+            const playbackSpeed = getPlaybackSpeed ? getPlaybackSpeed(clip.videoPath) : 1.0;
+            
             allClips.push({
               ...clip,
               video,
               trackId: track.id,
+              playbackSpeed: playbackSpeed,
             });
           }
         });
@@ -151,13 +206,13 @@ function exportTimeline(params, onProgress) {
       // Just concatenate the clips directly using FFmpeg's most basic method
       
       if (allClips.length === 1) {
-        // Single clip - use basic FFmpeg without any filter operations
+        // Single clip - use basic FFmpeg
         const clip = allClips[0];
         const inputPath = clip.video.originalPath || clip.video.path;
         
         let command = ffmpeg(inputPath);
         
-        // Apply trim points using input options (no filters)
+        // Apply trim points using input options
         if (clip.inPoint && clip.inPoint > 0) {
           command = command.inputOptions([`-ss ${clip.inPoint}`]);
         }
@@ -166,6 +221,43 @@ function exportTimeline(params, onProgress) {
           command = command.inputOptions([`-t ${duration}`]);
         } else if (clip.duration) {
           command = command.inputOptions([`-t ${clip.duration}`]);
+        }
+        
+        // Apply playback speed if specified
+        const speed = clip.playbackSpeed || 1.0;
+        let videoFilter = null;
+        let audioFilter = null;
+        
+        if (speed !== 1.0) {
+          videoFilter = `setpts=${1.0 / speed}*PTS`;
+          if (speed > 2.0) {
+            audioFilter = `atempo=2.0,atempo=${speed / 2.0}`;
+          } else if (speed < 0.5) {
+            audioFilter = `atempo=0.5,atempo=${speed / 0.5}`;
+          } else {
+            audioFilter = `atempo=${speed}`;
+          }
+        }
+        
+        // Build filter complex if speed is applied
+        if (videoFilter || audioFilter) {
+          let filterComplex = '';
+          if (videoFilter && audioFilter) {
+            filterComplex = `[0:v]${videoFilter}[v];[0:a]${audioFilter}[a]`;
+            command = command
+              .complexFilter(filterComplex)
+              .outputOptions(['-map', '[v]', '-map', '[a]']);
+          } else if (videoFilter) {
+            filterComplex = `[0:v]${videoFilter}[v]`;
+            command = command
+              .complexFilter(filterComplex)
+              .outputOptions(['-map', '[v]', '-map', '0:a']);
+          } else if (audioFilter) {
+            filterComplex = `[0:a]${audioFilter}[a]`;
+            command = command
+              .complexFilter(filterComplex)
+              .outputOptions(['-map', '0:v', '-map', '[a]']);
+          }
         }
         
         command = command
@@ -208,7 +300,7 @@ function exportTimeline(params, onProgress) {
 
           let clipCommand = ffmpeg(inputPath);
 
-          // Apply trim points using input options (NO FILTERS - same reliable approach)
+          // Apply trim points using input options
           if (clip.inPoint && clip.inPoint > 0) {
             clipCommand = clipCommand.inputOptions([`-ss ${clip.inPoint}`]);
           }
@@ -219,12 +311,52 @@ function exportTimeline(params, onProgress) {
             clipCommand = clipCommand.inputOptions([`-t ${clip.duration}`]);
           }
 
-          // Normalize to consistent format (same as before)
+          // Apply playback speed if specified
+          const speed = clip.playbackSpeed || 1.0;
+          let videoFilter = null;
+          let audioFilter = null;
+          
+          if (speed !== 1.0) {
+            videoFilter = `setpts=${1.0 / speed}*PTS`;
+            if (speed > 2.0) {
+              audioFilter = `atempo=2.0,atempo=${speed / 2.0}`;
+            } else if (speed < 0.5) {
+              audioFilter = `atempo=0.5,atempo=${speed / 0.5}`;
+            } else {
+              audioFilter = `atempo=${speed}`;
+            }
+          }
+          
+          // Build filter complex if speed is applied
+          if (videoFilter || audioFilter) {
+            let filterComplex = '';
+            if (videoFilter && audioFilter) {
+              filterComplex = `[0:v]${videoFilter},scale=1280x720[v];[0:a]${audioFilter}[a]`;
+              clipCommand = clipCommand
+                .complexFilter(filterComplex)
+                .outputOptions(['-map', '[v]', '-map', '[a]']);
+            } else if (videoFilter) {
+              filterComplex = `[0:v]${videoFilter},scale=1280x720[v]`;
+              clipCommand = clipCommand
+                .complexFilter(filterComplex)
+                .outputOptions(['-map', '[v]', '-map', '0:a']);
+            } else if (audioFilter) {
+              filterComplex = `[0:a]${audioFilter}[a]`;
+              clipCommand = clipCommand
+                .complexFilter(filterComplex)
+                .outputOptions(['-map', '0:v', '-map', '[a]'])
+                .size('1280x720');
+            }
+          } else {
+            // No speed filter, use size method directly
+            clipCommand = clipCommand.size('1280x720');
+          }
+
+          // Normalize to consistent format
           clipCommand = clipCommand
             .videoCodec('libx264')
             .audioCodec('aac')
             .outputOptions(['-preset ultrafast', '-crf 23'])
-            .size('1280x720')
             .output(tempFile);
 
           // Process this clip

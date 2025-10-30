@@ -255,10 +255,17 @@ export default function Timeline() {
 
       const outputPath = saveResult.filePath;
       
-      // Step 2: Prepare videos object for export
+      // Step 2: Prepare videos object and trim points for export
       const videosObject = {};
       videos.forEach(video => {
         videosObject[video.path] = video;
+      });
+      
+      // Get trim points including playback speeds
+      const trimPointsObject = {};
+      videos.forEach(video => {
+        const trim = getTrimPoints(video.path);
+        trimPointsObject[video.path] = trim;
       });
 
       // Step 3: Export timeline
@@ -266,6 +273,7 @@ export default function Timeline() {
         tracks: tracks,
         outputPath: outputPath,
         videos: videosObject,
+        trimPoints: trimPointsObject,
       });
 
       if (exportResult.success) {

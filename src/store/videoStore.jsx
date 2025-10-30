@@ -196,7 +196,43 @@ export function VideoProvider({ children }) {
    * @returns {Object} - Object with inPoint and outPoint
    */
   const getTrimPoints = (videoPath) => {
-    return trimPoints[videoPath] || { inPoint: 0, outPoint: null };
+    return trimPoints[videoPath] || { inPoint: 0, outPoint: null, playbackSpeed: 1.0 };
+  };
+  
+  /**
+   * Set playback speed for a video
+   * @param {string} videoPath - Path of the video
+   * @param {number} speed - Playback speed (0.5 to 2.0)
+   */
+  const setPlaybackSpeed = (videoPath, speed) => {
+    // Validate speed range
+    const clampedSpeed = Math.max(0.5, Math.min(2.0, speed));
+    
+    setTrimPoints((prev) => ({
+      ...prev,
+      [videoPath]: {
+        ...getTrimPoints(videoPath),
+        playbackSpeed: clampedSpeed,
+      },
+    }));
+    
+    saveToHistory('setPlaybackSpeed', `Set playback speed to ${clampedSpeed}x for ${videoPath}`);
+  };
+  
+  /**
+   * Get playback speed for a video
+   * @param {string} videoPath - Path of the video
+   * @returns {number} - Playback speed (default: 1.0)
+   */
+  const getPlaybackSpeed = (videoPath) => {
+    if (!videoPath) return 1.0;
+    const trim = getTrimPoints(videoPath);
+    // Ensure we return a valid number, defaulting to 1.0
+    const speed = trim.playbackSpeed;
+    if (speed === undefined || speed === null || isNaN(speed)) {
+      return 1.0;
+    }
+    return speed;
   };
 
   /**
@@ -878,6 +914,8 @@ export function VideoProvider({ children }) {
     setInPoint,
     setOutPoint,
     getTrimPoints,
+    setPlaybackSpeed,
+    getPlaybackSpeed,
     // Recording state
     isRecording,
     recordingDuration,

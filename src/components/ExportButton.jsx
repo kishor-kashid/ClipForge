@@ -5,7 +5,7 @@ import { useToast } from './ToastProvider';
 
 export default function ExportButton() {
   const [isOpen, setIsOpen] = useState(true);
-  const { selectedVideo, getSelectedVideoObject, getTrimPoints } = useVideoStore();
+  const { selectedVideo, getSelectedVideoObject, getTrimPoints, getPlaybackSpeed } = useVideoStore();
   const { addToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -128,6 +128,9 @@ export default function ExportButton() {
         duration = outPoint - inPoint;
       }
 
+      // Get playback speed
+      const playbackSpeed = getPlaybackSpeed(selectedVideo);
+      
       // Step 3: Export video
       const exportResult = await window.electronAPI.exportVideo({
         inputPath: selectedVideoObject.path,
@@ -137,6 +140,7 @@ export default function ExportButton() {
         resolution: resolution,
         quality: quality,
         format: format,
+        playbackSpeed: playbackSpeed,
       });
 
       if (exportResult.success) {
